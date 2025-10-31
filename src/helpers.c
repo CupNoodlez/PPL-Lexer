@@ -6,7 +6,42 @@
 
 
 void outputTokens(Token* tokens) {
+    FILE *outputFile = fopen("tokens_output.txt", "w");
+    if (!outputFile) {
+        printf("Error: Could not create output file.\n");
+        return;
+    }
+    // Console table header
+    printf("\n╔═════════════════════════════════════════════════════════════════════════════╗\n");
+    printf("║                                  TOKEN TABLE                                ║\n");
+    printf("╠═════════════════════════════════════════════════════════════════════════════╣\n");
+    printf("║ %-4s │ %-20s │ %-45s ║\n", "No.", "Type", "Lexeme");
+    printf("╠═════════════════════════════════════════════════════════════════════════════╣\n");
 
-    // print in table format
+    // File table header
+    fprintf(outputFile, "TOKEN TABLE\n");
+    fprintf(outputFile, "===========\n\n");
+    fprintf(outputFile, "%-4s | %-20s | %-45s\n", "No.", "Type", "Lexeme");
+    fprintf(outputFile, "-----+----------------------+-----------------------------------------------\n");
+
+
+    // Count tokens and print them
+    int count = 0;
+    while (tokens[count].type[0] != '\0') {
+        count++;
+        
+        // Print each data
+        printf("║ %-4d │ %-20s │ %-45s ║\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+        fprintf(outputFile, "%-4d | %-20s | %-45s\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+    }
+
+    printf("╚═════════════════════════════════════════════════════════════════════════════╝\n");
+    printf("\nTotal tokens: %d\n", count);
+    printf("Output saved to: tokens_output.txt\n\n");
+
+    // Print to file
+    fprintf(outputFile, "\nTotal tokens: %d\n", count);
+
+    fclose(outputFile);
 }
 
