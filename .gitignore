@@ -1,1 +1,3 @@
-*.exe 
+obj/
+Lexer.exe
+Lexer
