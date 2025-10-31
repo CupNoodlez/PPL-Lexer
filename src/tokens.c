@@ -2,7 +2,7 @@
 
 
 const char* keywords[] = {
-    "test"
+    "scene", "dialogue", "choice", "character"
 };
 
 const char* noiseWords[] = {
@@ -21,6 +21,7 @@ const char* delimiters[] = {
     "test"
 };
 
+//Function to compare if strings are equal
 bool strEqual(const char* a, const char* b) {
     int i = 0;
     while (a[i] != '\0' && b[i] != '\0') {

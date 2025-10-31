@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -g
-TARGET = lexer
+TARGET = Lexer
 SRCDIR = src
 OBJDIR = obj
 
