@@ -15,7 +15,7 @@
 #define UNKNOWN     "UNKNOWN"
 
 typedef struct {
-    const char type[20];        
+    char type[20];        
     char lexeme[100];      
 } Token;
 
