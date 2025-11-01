@@ -1,1 +1,4 @@
-*.exe 
+obj/
+Lexer.exe
+Lexer
+tokens_output.txt
