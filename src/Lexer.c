@@ -3,10 +3,9 @@
 #include "tokens.h"
 #include "helpers.h"
 
-#define TOKEN_SIZE 100
 
 int main() { 
- 
+
     //user inputs filename
     char filename[256];  
     printf("Enter filename: ");
@@ -36,26 +35,14 @@ int main() {
     Token tokens[1000], buffer;
 
     char ch;
-    char word[TOKEN_SIZE];
-    int counter = 0;
-    
-    while((ch = fgetc(fp)) != EOF){
-        if(counter <= TOKEN_SIZE){
-            if(!isWhiteSpace(ch)){
-                word[counter++] == ch;
-            }
-
-        } else {
-            printf("Too Long");
-        }
-    }
-
+    while ((ch = fgetc(fp)) != EOF) {      
         // forward scan
         // if delimiter/whitespace (DW), scan backward until DW to form lexeme, then skip to the next 
         // store lexeme in buffer.lexeme
 
         // tokens[i].lexeme = buffer.lexeme;
         // tokens[i].type = getTokenType(buffer.lexeme);
+    }
 
 
     // outputTokens(tokens);
