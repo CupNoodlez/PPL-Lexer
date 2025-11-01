@@ -1,8 +1,9 @@
 #ifndef HELPERS_H
 #define HELPERS_H
-#include <stdio.h>
 
-void outputTokens(Token* tokens);
+//void outputTokens(Token* tokens);
 
+//header for file extension reader
+int read_file_ext(const char *filename);
 
 #endif // HELPERS_H

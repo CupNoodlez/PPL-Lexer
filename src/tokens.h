@@ -9,13 +9,13 @@
 #define IDENTIFIER  "IDENTIFIER"
 #define NUMBER      "NUMBER"
 #define REL_OP      "REL_OP"
-#define BOOL_OP     "BOOL_OP"
+#define LOG_OP     "LOG_OP"
 #define DELIMITER   "DELIMITER"
 #define COMMENT     "COMMENT"
 #define UNKNOWN     "UNKNOWN"
 
 typedef struct {
-    const char type[20];        
+    char type[20];        
     char lexeme[100];      
 } Token;
 
@@ -28,11 +28,11 @@ extern const char* noiseWords[];
 extern const char* relationalOps[];
 extern const char* booleanOps[];
 extern const char* delimiters[];
-extern const int keywords_count;
-extern const int noiseWords_count;
-extern const int relationalOps_count;
-extern const int booleanOps_count;
-extern const int delimiters_count;
+extern const int kw_count;
+extern const int noise_count;
+extern const int relop_count;
+extern const int boolop_count;
+extern const int delim_count;
 
 
 // -----------------------------
