@@ -1,30 +1,30 @@
 #include "tokens.h"
-
+#include <stdlib.h>
 
 const char* keywords[] = {
-    "test"
+    "scene", "dialogue", "choice", "character", NULL
 };
 
 const char* noiseWords[] = {
-    "test"
+    ":", "narrate", "action", "is", NULL
 };
 
 const char* relationalOps[] = {
-    "test"
+    "==", "!=", ">", ">=", "<", "<=", NULL
 };
 
-const char* booleanOps[] = {
-    "test"
+const char* logicalOps[] = {
+    "and", "or", "not", NULL
 };
 
 const char* delimiters[] = {
-    "test"
+    ",", ":", "“","”", "‘", "’", "{", "}", NULL
 };
 
 const int kw_count = sizeof(keywords) / sizeof(keywords[0]);
 const int noise_count = sizeof(noiseWords) / sizeof(noiseWords[0]);
 const int relop_count = sizeof(relationalOps) / sizeof(relationalOps[0]);
-const int boolop_count = sizeof(booleanOps) / sizeof(booleanOps[0]);
+const int boolop_count = sizeof(logicalOps) / sizeof(logicalOps[0]);
 const int delim_count = sizeof(delimiters) / sizeof(delimiters[0]);
 
 bool strEqual(const char* a, const char* b) {
@@ -37,23 +37,54 @@ bool strEqual(const char* a, const char* b) {
 }
 
 bool isKeyword(const char* lexeme) {
-    // implementation goes here
+    
+    for(int i = 0; keywords[i] != NULL; i++){
+        if(strEqual(lexeme, keywords[i])){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool isNoiseWord(const char* lexeme) {
-    // implementation goes here
+    for(int i = 0; noiseWords[i] != NULL; i++){
+        if(strEqual(lexeme, noiseWords[i])){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool isRelationalOp(const char* lexeme) {
-    // implementation goes here
+    for(int i = 0; relationalOps[i] != NULL; i++){
+        if(strEqual(lexeme, relationalOps[i])){
+            return true;
+        }
+    }
+
+    return false;
 }
 
-bool isBooleanOp(const char* lexeme) {
-    // implementation goes here
+bool isLogicalOp(const char* lexeme) {
+    for(int i = 0; logicalOps[i] != NULL; i++){
+        if(strEqual(lexeme, logicalOps[i])){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool isDelimiter(const char* lexeme) {
-    // implementation goes here
+    for(int i = 0; delimiters[i] != NULL; i++){
+        if(strEqual(lexeme, delimiters[i])){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool isComment(const char* lexeme) {
@@ -74,7 +105,7 @@ const char* getTokenType(const char* lexeme) {
     if (isIdentifier(lexeme)) return IDENTIFIER;
     if (isNumber(lexeme)) return NUMBER;
     if (isRelationalOp(lexeme)) return REL_OP;
-    if (isBooleanOp(lexeme)) return BOOL_OP;
+    if (isLogicalOp(lexeme)) return LOG_OP;
     if (isDelimiter(lexeme)) return DELIMITER;
     if (isComment(lexeme)) return COMMENT;
     return UNKNOWN;

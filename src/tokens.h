@@ -9,7 +9,7 @@
 #define IDENTIFIER  "IDENTIFIER"
 #define NUMBER      "NUMBER"
 #define REL_OP      "REL_OP"
-#define BOOL_OP     "BOOL_OP"
+#define LOG_OP     "LOG_OP"
 #define DELIMITER   "DELIMITER"
 #define COMMENT     "COMMENT"
 #define UNKNOWN     "UNKNOWN"
