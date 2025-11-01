@@ -15,7 +15,7 @@ int main() {
     char ch;
     while ((ch = fgetc(fp)) != EOF) {      
         // forward scan
-        // if delimiter/whitespace (DW), scan backward until DW to form lexeme
+        // if delimiter/whitespace (DW), scan backward until DW to form lexeme, then skip to the next 
         // store lexeme in buffer.lexeme
 
         // tokens[i].lexeme = buffer.lexeme;

@@ -28,11 +28,11 @@ extern const char* noiseWords[];
 extern const char* relationalOps[];
 extern const char* booleanOps[];
 extern const char* delimiters[];
-extern const int keywords_count;
-extern const int noiseWords_count;
-extern const int relationalOps_count;
-extern const int booleanOps_count;
-extern const int delimiters_count;
+extern const int kw_count;
+extern const int noise_count;
+extern const int relop_count;
+extern const int boolop_count;
+extern const int delim_count;
 
 
 // -----------------------------

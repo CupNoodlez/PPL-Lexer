@@ -21,6 +21,12 @@ const char* delimiters[] = {
     "test"
 };
 
+const int kw_count = sizeof(keywords) / sizeof(keywords[0]);
+const int noise_count = sizeof(noiseWords) / sizeof(noiseWords[0]);
+const int relop_count = sizeof(relationalOps) / sizeof(relationalOps[0]);
+const int boolop_count = sizeof(booleanOps) / sizeof(booleanOps[0]);
+const int delim_count = sizeof(delimiters) / sizeof(delimiters[0]);
+
 bool strEqual(const char* a, const char* b) {
     int i = 0;
     while (a[i] != '\0' && b[i] != '\0') {
