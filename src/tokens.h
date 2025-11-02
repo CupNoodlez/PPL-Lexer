@@ -13,6 +13,13 @@
 #define DELIMITER   "DELIMITER"
 #define COMMENT     "COMMENT"
 #define UNKNOWN     "UNKNOWN"
+#define ADD_OP      "ADD_OP"
+#define SUB_OP      "SUB_OP"
+#define MUL_OP      "MUL_OP"
+#define DIV_OP      "DIV_OP"
+#define EXP_OP      "EXP_OP"
+#define MOD_OP      "MOD_OP"
+#define EQUAL       "EQUAL_SIGN"
 
 typedef struct {
     char type[20];        

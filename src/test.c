@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 #include "tokens.h"
 
 #define TOKEN_SIZE 100
+#define MAX_TOKENS 1000
 
 int main() {
     
@@ -12,6 +14,9 @@ int main() {
         printf("Error opening file 'test.txt'. Make sure the file is in the program's working directory.\n");
         return 1;
     }
+
+    Token tokens[MAX_TOKENS];
+    int tokenCount = 0;
 
     char ch, next;
     char word[TOKEN_SIZE];
@@ -24,25 +29,34 @@ int main() {
 
             // single-line comment
             if (next == '/') {
-                printf("Comment: //");
-                while ((ch = fgetc(fp)) != EOF && ch != '\n') {
-                    putchar(ch); // print the comment text
-                    /* naisip ko kasi kung ilalagay siya sa array eh pwede namang infinite yung comment*/
+                char comment[TOKEN_SIZE] = "//";
+                int i = 2;
+                while ((ch = fgetc(fp)) != EOF && ch != '\n' && i < TOKEN_SIZE - 1) {
+                    comment[i++] = ch;
                 }
-                printf("\n");
-                continue; // skip to next iteration
+                comment[i] = '\0';
+
+                strcpy(tokens[tokenCount].lexeme, comment);
+                strcpy(tokens[tokenCount].type, COMMENT);
+                tokenCount++;
+                continue;
             }
 
             // multi-line comment
             else if (next == '*') {
-                printf("Comment: /*");
+                char comment[TOKEN_SIZE] = "/*";
+                int i = 2;
                 char prev = 0;
-                while ((ch = fgetc(fp)) != EOF) {
-                    putchar(ch);
+                while ((ch = fgetc(fp)) != EOF && i < TOKEN_SIZE - 1) {
+                    comment[i++] = ch;
                     if (prev == '*' && ch == '/') break;
                     prev = ch;
                 }
-                printf("\n");
+                comment[i] = '\0';
+
+                strcpy(tokens[tokenCount].lexeme, comment);
+                strcpy(tokens[tokenCount].type, COMMENT);
+                tokenCount++;
                 continue;
             }
 
@@ -56,13 +70,18 @@ int main() {
             // end of a word
             if (count > 0) {
                 word[count] = '\0';
-                printf("Word: %s\n", word);
+                strcpy(tokens[tokenCount].lexeme, word);
+                strcpy(tokens[tokenCount].type, getTokenType(word));
+                tokenCount++;
                 count = 0;
             }
 
             // also print the delimiter itself if needed
             if (isDelimiter(ch)) {
-                printf("Delimiter: %c\n", ch);
+                char delimStr[2] = { ch, '\0' };
+                strcpy(tokens[tokenCount].lexeme, delimStr);
+                strcpy(tokens[tokenCount].type, DELIMITER);
+                tokenCount++;
             }
         } else {
             word[count++] = ch;
@@ -73,9 +92,20 @@ int main() {
     // print last word if file didn’t end with delimiter
     if (count > 0) {
         word[count] = '\0';
-        printf("Word: %s\n", word);
+        strcpy(tokens[tokenCount].lexeme, word);
+        strcpy(tokens[tokenCount].type, getTokenType(word));
+        tokenCount++;
     }
 
     fclose(fp);
+
+        // --- Print all tokens ---
+    printf("\n%-20s | %-10s\n", "LEXEME", "TYPE");
+    printf("----------------------------------------\n");
+    for (int i = 0; i < tokenCount; i++) {
+        printf("%-20s | %-10s\n", tokens[i].lexeme, tokens[i].type);
+    }
+
+
     return 0;
 }

@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 const char* keywords[] = {
-    "scene", "dialogue", "choice", "character", NULL
+    "scene", "dialogue", "choice", "character", "emotion", NULL
 };
 
 const char* noiseWords[] = {
@@ -20,6 +20,10 @@ const char* logicalOps[] = {
 
 const char* delimiters[] = {
     ",", ":", "“","”", "‘", "’", "{", "}", NULL
+};
+
+const char* arithmeticOps[] = {
+    "+", "-", "*", "/", "%", "^", "=", NULL
 };
 
 const int kw_count = 4;
@@ -102,6 +106,12 @@ bool isWhiteSpace(char ch) {
     return (ch == ' ' || ch == '\n' || ch == '\t');
 }
 
+bool isArithmeticSymbol(const char* lexeme){
+    for (int i = 0; arithmeticOps[i] != NULL; i++)
+        if (strEqual(lexeme, arithmeticOps[i])) return true;
+    return false;
+}
+
 const char* getTokenType(const char* lexeme) {
     if (isKeyword(lexeme)) return KEYWORD;
     if (isNoiseWord(lexeme)) return NOISE;
@@ -109,5 +119,26 @@ const char* getTokenType(const char* lexeme) {
     if (isNumber(lexeme)) return NUMBER;
     if (isRelationalOp(lexeme)) return REL_OP;
     if (isLogicalOp(lexeme)) return LOG_OP;
+    if(isArithmeticSymbol(lexeme)){
+        switch(lexeme[0]){
+            case '+' : return ADD_OP; 
+                       break;
+            case '-' : return SUB_OP;
+                       break;
+            case '*' : return MUL_OP;
+                       break;
+            case '/' : return DIV_OP;
+                       break;
+            case '%' : return MOD_OP;
+                       break;
+            case '^' : return EXP_OP;
+                       break;
+            case '=' : return EQUAL;
+                      break;
+            default: return UNKNOWN;
+                       break;
+        }
+    }
+
     return UNKNOWN;
 }
