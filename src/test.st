@@ -1,0 +1,1 @@
+if Elio.trust > 60 show "Reunion.png"

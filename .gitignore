@@ -1,6 +1,7 @@
 obj/
 Lexer.exe
 Lexer
+Lexer.bak
 tokens_output.txt
 .vscode/
 src/program.exe
