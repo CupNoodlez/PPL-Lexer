@@ -4,14 +4,17 @@
 #include "tokens.h"
 #include "helpers.h"
 
+typedef enum {
+    DEFAULT,
+    IN_IDENTIFIER,
+    IN_STRING,
+    IN_OPERATOR
+} LexerState;
+
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
 
 int main() {
     char filename[256] = "src/test.st";
-
-    // printf("Enter filename: "); 
-    // scanf("%255s", filename); 
-    // printf("Filename entered: %s\n", filename);
     if (!read_file_ext(filename)) {
         printf("Please enter a valid .st file format.\n");
         return 1;
@@ -30,65 +33,83 @@ int main() {
     int buffer_index = 0, token_count = 0;
     int ch;
 
+    LexerState state = DEFAULT;
+
     while ((ch = fgetc(fp)) != EOF) {
-        // Skip whitespace and finalize prev token
-        if (isWhitespace(ch)) {
-            finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-            continue;
-        }
+        switch (state) {
 
-        // Handle string literals
-        if (ch == '"') {
-            finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-            lexeme_buffer[buffer_index++] = ch;
+            // --- Default: decide what to do with the next character ---
+            case DEFAULT:
+                if (isWhitespace(ch)) {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                }
+                else if (ch == '"') {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = IN_STRING;
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                else if (isSeparator(ch)) {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    lexeme_buffer[0] = ch;
+                    lexeme_buffer[1] = '\0';
+                    str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
+                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                    token_count++;
+                }
+                else if (ch == '=' || ch == '!' || ch == '<' || ch == '>') {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = IN_OPERATOR;
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                else {
+                    // start of identifier or keyword
+                    lexeme_buffer[buffer_index++] = ch;
+                    state = IN_IDENTIFIER;
+                }
+                break;
 
-            while ((ch = fgetc(fp)) != EOF && ch != '"') {
+            // --- Identifier or keyword ---
+            case IN_IDENTIFIER:
+                if (isWhitespace(ch) || isSeparator(ch) || ch == '=' || ch == '!' || ch == '<' || ch == '>') {
+                    ungetc(ch, fp);  // push back for next iteration
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = DEFAULT;
+                } else {
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                break;
+
+            // --- String literal ---
+            case IN_STRING:
                 lexeme_buffer[buffer_index++] = ch;
-            }
-            if (ch == '"') lexeme_buffer[buffer_index++] = '"';
+                if (ch == '"') {
+                    // string closed
+                    lexeme_buffer[buffer_index] = '\0';
+                    str_copy(tokens[token_count].type, STRING_LITERAL);
+                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                    token_count++;
+                    buffer_index = 0;
+                    state = DEFAULT;
+                }
+                break;
 
-            lexeme_buffer[buffer_index] = '\0';
-            str_copy(tokens[token_count].type, STRING_LITERAL);
-            str_copy(tokens[token_count].lexeme, lexeme_buffer);
-            token_count++;
-            buffer_index = 0;
-            continue;
+            // --- Operators (e.g. ==, <=, !=) ---
+            case IN_OPERATOR:
+                if (ch == '=') {
+                    lexeme_buffer[buffer_index++] = ch;
+                } else {
+                    ungetc(ch, fp);
+                }
+                lexeme_buffer[buffer_index] = '\0';
+                str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
+                str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                token_count++;
+                buffer_index = 0;
+                state = DEFAULT;
+                break;
         }
-
-        // Handle two-character operators (==, !=, >=, <=)
-        if (ch == '=' || ch == '!' || ch == '>' || ch == '<') {
-            finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-            lexeme_buffer[0] = ch;
-            lexeme_buffer[1] = '\0';
-
-            int next = fgetc(fp);
-            if (next == '=') {
-                lexeme_buffer[1] = next;
-                lexeme_buffer[2] = '\0';
-            } else if (next != EOF) {
-                ungetc(next, fp);
-            }
-
-            str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
-            str_copy(tokens[token_count].lexeme, lexeme_buffer);
-            token_count++;
-            continue;
-        }
-
-        // Handle separators 
-        if (isSeparator(ch)) {
-            finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-            lexeme_buffer[0] = ch;
-            lexeme_buffer[1] = '\0';
-            str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
-            str_copy(tokens[token_count].lexeme, lexeme_buffer);
-            token_count++;
-            continue;
-        }
-
-        // Otherwise, accumulate character
-        lexeme_buffer[buffer_index++] = ch;
     }
+
     // Handle leftover lexeme at EOF
     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
 
@@ -99,12 +120,13 @@ int main() {
 
 
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index) {
-    if (*buffer_index > 0) {
-        lexeme_buffer[*buffer_index] = '\0';
-        str_copy(tokens[*token_count].type, getTokenType(lexeme_buffer));
-        str_copy(tokens[*token_count].lexeme, lexeme_buffer);
-        (*token_count)++;
-        *buffer_index = 0;
-        lexeme_buffer[0] = '\0';
-    }
+    if (*buffer_index == 0) return;
+    lexeme_buffer[*buffer_index] = '\0';
+
+    str_copy(tokens[*token_count].type, getTokenType(lexeme_buffer));
+    str_copy(tokens[*token_count].lexeme, lexeme_buffer);
+    (*token_count)++;
+
+    *buffer_index = 0;
+    lexeme_buffer[0] = '\0';
 }
