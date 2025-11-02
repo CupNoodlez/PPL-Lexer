@@ -9,9 +9,11 @@
 #define IDENTIFIER  "IDENTIFIER"
 #define NUMBER      "NUMBER"
 #define REL_OP      "REL_OP"
-#define LOG_OP     "LOG_OP"
+#define LOG_OP      "LOG_OP"
+#define ARITH_OP    "ARITH_OP"
 #define DELIMITER   "DELIMITER"
 #define COMMENT     "COMMENT"
+#define STRING_LITERAL "STRING_LITERAL"
 #define UNKNOWN     "UNKNOWN"
 
 // Token type specific for keywords
@@ -93,12 +95,14 @@ typedef struct {
 extern const char* keywords[];
 extern const char* noiseWords[];
 extern const char* relationalOps[];
-extern const char* booleanOps[];
+extern const char* logicalOps[];
+extern const char* arithmeticOps[];
 extern const char* delimiters[];
 extern const int kw_count;
 extern const int noise_count;
 extern const int relop_count;
 extern const int boolop_count;
+extern const int arithop_count;
 extern const int delim_count;
 
 
@@ -108,11 +112,15 @@ extern const int delim_count;
 bool isKeyword(const char* lexeme);
 bool isNoiseWord(const char* lexeme);
 bool isRelationalOp(const char* lexeme);
-bool isBooleanOp(const char* lexeme);
+bool isLogicalOp(const char* lexeme);
+bool isArithmeticOp(const char* lexeme);
 bool isDelimiter(const char* lexeme);
 bool isComment(const char* lexeme);
+bool isStringLiteral(const char* lexeme);
 bool isIdentifier(const char* lexeme);
 bool isNumber(const char* lexeme);
+bool isWhitespace(char c);
+bool isSeparator(char c);
 const char* getTokenType(const char* lexeme);
 
 #endif // TOKENS_H
