@@ -3,18 +3,13 @@
 
 #include <stdbool.h>   
 
-// Token type constants
-#define KEYWORD     "KEYWORD"
-#define NOISE       "NOISE"
-#define IDENTIFIER  "IDENTIFIER"
-#define NUMBER      "NUMBER"
-#define REL_OP      "REL_OP"
-#define LOG_OP      "LOG_OP"
-#define ARITH_OP    "ARITH_OP"
-#define DELIMITER   "DELIMITER"
-#define COMMENT     "COMMENT"
-#define STRING_LITERAL "STRING_LITERAL"
-#define UNKNOWN     "UNKNOWN"
+// Token type for none specific
+#define IDENTIFIER          "IDENTIFIER"
+#define COMMENT             "COMMENT"
+#define INTEGER_LITERAL     "INTEGER_LITERAL"
+#define FLOAT_LITERAL       "FLOAT_LITERAL"
+#define STRING_LITERAL      "STRING_LITERAL"
+#define UNKNOWN             "UNKNOWN"
 
 // Token type specific for keywords
 #define KEYWORD_CHARACTER   "KEYWORD_CHARACTER"
