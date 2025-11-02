@@ -19,14 +19,13 @@ typedef struct {
     char lexeme[100];      
 } Token;
 
-
 // -----------------------------
 // Token Definitions
 // -----------------------------
 extern const char* keywords[];
 extern const char* noiseWords[];
 extern const char* relationalOps[];
-extern const char* booleanOps[];
+extern const char* logicalOps[];   
 extern const char* delimiters[];
 extern const int kw_count;
 extern const int noise_count;
@@ -34,19 +33,20 @@ extern const int relop_count;
 extern const int boolop_count;
 extern const int delim_count;
 
+// -----------------------------
+// Token Identifiers (signatures)
+// -----------------------------
+bool isNumber(const char* lexeme);
+bool isAlphabet(char lexeme);
+bool isWhiteSpace(char lexeme);
+bool isDelimiter(char lexeme);
 
-// -----------------------------
-// Token Identifiers
-// -----------------------------
 bool isKeyword(const char* lexeme);
 bool isNoiseWord(const char* lexeme);
 bool isRelationalOp(const char* lexeme);
-bool isBooleanOp(const char* lexeme);
-bool isDelimiter(const char* lexeme);
-bool isComment(const char* lexeme);
+bool isLogicalOp(const char* lexeme);   
 bool isIdentifier(const char* lexeme);
-bool isNumber(const char* lexeme);
-bool isWhiteSpace(const char* lexeme);
+
 const char* getTokenType(const char* lexeme);
 
 #endif // TOKENS_H
