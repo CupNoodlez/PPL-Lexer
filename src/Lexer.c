@@ -5,15 +5,16 @@
 #include "helpers.h"
 
 typedef enum {
-    START,          // starting state (beginning of token recognition)
-    IN_IDENTIFIER,  // handles identifiers and keywords
-    IN_NUMBER,      // handles numeric literals
-    IN_OPERATOR,    // handles operators
-    IN_COMMENT,     // handles comments
-    IN_STRING,      // handles string literals
-    IN_CHAR,        // handles character literals
-    IN_DELIM,       // handles delimiters
-    IN_BLANK,       // handles whitespace
+    START,             // starting state (beginning of token recognition)
+    IN_IDENTIFIER,     // handles identifiers and keywords
+    IN_NUMBER,         // handles numeric literals
+    IN_OPERATOR,       // handles operators
+    IN_COMMENT,        // handles comments
+    IN_COMMENT_MULTI,  // handles multi-line comments
+    IN_STRING,         // handles string literals
+    IN_CHAR,           // handles character literals
+    IN_DELIM,          // handles delimiters
+    IN_BLANK,          // handles whitespace
 } LexerState;
 
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
@@ -90,6 +91,9 @@ int main() {
                 else if (ch == '#') {
                     state = IN_COMMENT;
                     lexeme_buffer[buffer_index++] = ch;
+                    int next = fgetc(fp);
+                    if (next == '#') state = IN_COMMENT_MULTI;
+                    ungetc(next, fp);
                 }
                 else if (ch == '"') {
                     state = IN_STRING;
@@ -196,37 +200,26 @@ int main() {
             case IN_COMMENT:
                 lexeme_buffer[buffer_index++] = ch;
 
-                if (buffer_index == 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] != '#') {
-                    // Single-line comment: read until newline
-                    while (ch != '\n' && (ch = fgetc(fp)) != EOF) {
-                        lexeme_buffer[buffer_index++] = ch;
-                    }
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = START;
-                }
-                // Check if it's a multi-line comment (starts with ##)
-                else if (buffer_index >= 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] == '#') {
-                    // Multi-line comment: read until closing ##
-                    bool found_closing = false;
-                    while (!found_closing && (ch = fgetc(fp)) != EOF) {
-                        lexeme_buffer[buffer_index++] = ch;
-                        
-                        // Check for closing ##
-                        if (ch == '#') {
-                            int next_ch = fgetc(fp);
-                            if (next_ch == '#') {
-                                lexeme_buffer[buffer_index++] = next_ch;
-                                found_closing = true;
-                            } else if (next_ch != EOF) {
-                                ungetc(next_ch, fp);
-                            }
-                        }
-                    }
+                if (ch == '\n') {
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = START;
                 }
                 break;
-        }        
+
+            case IN_COMMENT_MULTI:
+                lexeme_buffer[buffer_index++] = ch;
+                if (ch == '#') {
+                    int next = fgetc(fp);
+                    if (next == '#') {
+                        lexeme_buffer[buffer_index++] = next;
+                        finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                        state = START;
+                    } else {
+                        ungetc(next, fp);
+                    }
+                }
+                break;
+        }
     }
     
     // Handle leftover lexeme at EOF
