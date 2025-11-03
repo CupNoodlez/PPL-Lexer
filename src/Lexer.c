@@ -11,6 +11,7 @@ typedef enum {
     IN_OPERATOR,    // handles operators
     IN_COMMENT,     // handles comments
     IN_STRING,      // handles string literals
+    IN_CHAR,        // handles character literals
     IN_DELIM,       // handles delimiters
     IN_BLANK,       // handles whitespace
 } LexerState;
@@ -90,8 +91,12 @@ int main() {
                     state = IN_COMMENT;
                     lexeme_buffer[buffer_index++] = ch;
                 }
-                else if (ch == '"' || ch == '\'') {
+                else if (ch == '"') {
                     state = IN_STRING;
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                else if (ch == '\'') {
+                    state = IN_CHAR;
                     lexeme_buffer[buffer_index++] = ch;
                 }
                 else if (isOperator(ch)) {
@@ -159,7 +164,16 @@ int main() {
             // --- String literal ---
             case IN_STRING:
                 lexeme_buffer[buffer_index++] = ch;
-                if (ch == '"' || ch == '\'') {
+                if (ch == '"') {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = START;
+                }
+                break;
+
+            // --- Character literal ---
+            case IN_CHAR:
+                lexeme_buffer[buffer_index++] = ch;
+                if (ch == '\'') {
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = START;
                 }
@@ -181,15 +195,11 @@ int main() {
             // --- Comments ---
             case IN_COMMENT:
                 lexeme_buffer[buffer_index++] = ch;
-                // Check if it's a single-line comment (starts with single #)
+
                 if (buffer_index == 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] != '#') {
                     // Single-line comment: read until newline
                     while (ch != '\n' && (ch = fgetc(fp)) != EOF) {
                         lexeme_buffer[buffer_index++] = ch;
-                    }
-                    // Remove the last character if it's a newline
-                    if (buffer_index > 0 && lexeme_buffer[buffer_index - 1] == '\n') {
-                        buffer_index--;
                     }
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = START;

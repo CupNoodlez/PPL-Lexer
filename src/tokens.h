@@ -16,6 +16,7 @@
 #define MULTILINE_COMMENT   "MULTILINE_COMMENT"
 #define COMMENT             "COMMENT"
 #define STRING_LITERAL      "STRING_LITERAL"
+#define CHAR_LITERAL        "CHAR_LITERAL"
 #define NEWLINE             "NEWLINE"
 #define INDENT              "INDENT"
 #define DEDENT              "DEDENT"
@@ -121,6 +122,7 @@ bool isNoiseWord(const char* lexeme);
 bool isMultilineComment(const char* lexeme);
 bool isComment(const char* lexeme);
 bool isStringLiteral(const char* lexeme);
+bool isCharLiteral(const char* lexeme);
 bool isIdentifier(const char* lexeme);
 bool isNumber(const char* lexeme);
 bool isIntegerLiteral(const char* lexeme);

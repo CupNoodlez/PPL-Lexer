@@ -161,9 +161,16 @@ bool isComment(const char* lexeme) {
 bool isStringLiteral(const char* lexeme) {
     int len = 0;
     while (lexeme[len] != '\0') len++;
-    return (len >= 2 &&
-            ((lexeme[0] == '\"' && lexeme[len-1] == '\"') ||
-             (lexeme[0] == '\'' && lexeme[len-1] == '\'')));
+    return (len >= 4 &&
+            ((lexeme[0] == '\"' && lexeme[len-1] == '\"')));
+}
+
+bool isCharLiteral(const char* lexeme) {
+    int len = 0;
+    while (lexeme[len] != '\0') len++;
+    return (len == 3 &&
+            lexeme[0] == '\'' &&
+            lexeme[2] == '\'');
 }
 
 bool isIdentifier(const char* lexeme) {
@@ -278,6 +285,7 @@ const char* getTokenType(const char* lexeme) {
     
     if (isMultilineComment(lexeme)) return MULTILINE_COMMENT;
     if (isComment(lexeme)) return COMMENT;
+    if (isCharLiteral(lexeme)) return CHAR_LITERAL;
     if (isStringLiteral(lexeme)) return STRING_LITERAL;
     if (isIdentifier(lexeme)) return IDENTIFIER;
     if (isFloatLiteral(lexeme)) return FLOAT_LITERAL;
