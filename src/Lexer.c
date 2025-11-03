@@ -19,7 +19,7 @@ typedef enum {
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
 
 int main() {
-    char filename[256] = "src/test.st";
+    char filename[256] = "input.st";
     if (!read_file_ext(filename)) {
         printf("Please enter a valid .st file format.\n");
         return 1;

@@ -1,12 +1,12 @@
 #include "tokens.h"
 #include <stdlib.h>
 
-// Delimiters only (not operators)
+// Delimiters
 const char* delimiters[] = {
     ",", ":", ".", "(", ")", "[", "]"
 };
 
-// Operators (arithmetic)
+// Operators
 const char* operators[] = {
     "+", "-", "*", "/", "%", "=", "!", "<", ">"
 };
