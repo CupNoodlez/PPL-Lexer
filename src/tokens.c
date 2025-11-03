@@ -1,30 +1,5 @@
 #include "tokens.h"
-
-const char* keywords[] = {
-    "character", "scene", "dialogue", "choice", "option", "if", 
-    "then", "else", "repeat", "for", "in", "show", "end", "becomes", 
-    "emotion", "action", "set"
-};
-
-const char* noiseWords[] = {
-    "narrate", "action", "is"
-};
-
-const char* relationalOps[] = {
-    "==", "!=", ">", ">=", "<", "<="
-};
-
-const char* logicalOps[] = {
-    "and", "or", "not"
-};
-
-const char* arithmeticOps[] = {
-    "+", "-", "*", "/", "%"
-};
-
-const char* delimiters[] = {
-    ",", ":","\"", "\'", ".", "(", ")", "[", "]"
-};
+#include <stdlib.h>
 
 const char* separators[] = {
     ",", ":", ";", ".", "!", "?", "+", "-", "*", "/", "%", 
@@ -36,12 +11,6 @@ const char digits[] = "0123456789";
 const char lowercase[] = "abcdefghijklmnopqrstuvwxyz";
 const char uppercase[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-const int kw_count = sizeof(keywords) / sizeof(keywords[0]);
-const int noise_count = sizeof(noiseWords) / sizeof(noiseWords[0]);
-const int relop_count = sizeof(relationalOps) / sizeof(relationalOps[0]);
-const int boolop_count = sizeof(logicalOps) / sizeof(logicalOps[0]);
-const int arithop_count = sizeof(arithmeticOps) / sizeof(arithmeticOps[0]);
-const int delim_count = sizeof(delimiters) / sizeof(delimiters[0]);
 const int sep_count = sizeof(separators) / sizeof(separators[0]);
 
 bool strEqual(const char* a, const char* b) {
@@ -60,65 +29,105 @@ bool isInSet(char c, const char* set) {
     return false;
 }
 
-bool isKeyword(const char* lexeme) {
+const char* getKeyword(const char* lexeme) {
+    // Check regular keywords
+    if (strEqual(lexeme, "character")) return KEYWORD_CHARACTER;
+    if (strEqual(lexeme, "scene")) return KEYWORD_SCENE;
+    if (strEqual(lexeme, "dialogue")) return KEYWORD_DIALOGUE;
+    if (strEqual(lexeme, "choice")) return KEYWORD_CHOICE;
+    if (strEqual(lexeme, "option")) return KEYWORD_OPTION;
+    if (strEqual(lexeme, "if")) return KEYWORD_IF;
+    if (strEqual(lexeme, "then")) return KEYWORD_THEN;
+    if (strEqual(lexeme, "else")) return KEYWORD_ELSE;
+    if (strEqual(lexeme, "elif")) return KEYWORD_ELIF;
+    if (strEqual(lexeme, "repeat")) return KEYWORD_REPEAT;
+    if (strEqual(lexeme, "for")) return KEYWORD_FOR;
+    if (strEqual(lexeme, "do")) return KEYWORD_DO;
+    if (strEqual(lexeme, "while")) return KEYWORD_WHILE;
+    if (strEqual(lexeme, "do-while")) return KEYWORD_DO_WHILE;
+    if (strEqual(lexeme, "jump")) return KEYWORD_JUMP;
+    if (strEqual(lexeme, "stop")) return KEYWORD_STOP;
+    if (strEqual(lexeme, "continue")) return KEYWORD_CONTINUE;
+    if (strEqual(lexeme, "in")) return KEYWORD_IN;
+    if (strEqual(lexeme, "show")) return KEYWORD_SHOW;
+    if (strEqual(lexeme, "end")) return KEYWORD_END;
+    if (strEqual(lexeme, "True")) return KEYWORD_TRUE;
+    if (strEqual(lexeme, "False")) return KEYWORD_FALSE;
+    if (strEqual(lexeme, "becomes")) return KEYWORD_BECOMES;
+    if (strEqual(lexeme, "emotion")) return KEYWORD_EMOTION;
+    if (strEqual(lexeme, "action")) return KEYWORD_ACTION;
+    if (strEqual(lexeme, "set")) return KEYWORD_SET;
+    if (strEqual(lexeme, "and")) return KEYWORD_AND;
+    if (strEqual(lexeme, "or")) return KEYWORD_OR;
+    if (strEqual(lexeme, "not")) return KEYWORD_NOT;
+    if (strEqual(lexeme, "is")) return KEYWORD_IS;
+    if (strEqual(lexeme, "when")) return KEYWORD_WHEN;
     
-    for(int i = 0; i < kw_count; i++){
-        if(strEqual(lexeme, keywords[i])){
-            return true;
-        }
-    }
-
-    return false;
+    return NULL;  // Not a keyword
 }
 
-bool isNoiseWord(const char* lexeme) {
-    for(int i = 0; i < noise_count; i++){
-        if(strEqual(lexeme, noiseWords[i])){
-            return true;
-        }
-    }
-
-    return false;
+const char* getReservedKeyword(const char* lexeme) {
+    if (strEqual(lexeme, "null")) return RES_KEY_NULL;
+    if (strEqual(lexeme, "return")) return RES_KEY_RETURN;
+    if (strEqual(lexeme, "until")) return RES_KEY_UNTIL;
+    if (strEqual(lexeme, "times")) return RES_KEY_TIMES;
+    if (strEqual(lexeme, "error")) return RES_KEY_ERROR;
+    if (strEqual(lexeme, "except")) return RES_KEY_EXCEPT;
+    if (strEqual(lexeme, "fixed")) return RES_KEY_FIXED;
+    if (strEqual(lexeme, "break")) return RES_KEY_BREAK;
+    if (strEqual(lexeme, "none")) return RES_KEY_NONE;
+    if (strEqual(lexeme, "with")) return RES_KEY_WITH;
+    
+    return NULL;  // Not a reserved keyword
 }
 
-bool isRelationalOp(const char* lexeme) {
-    for(int i = 0; i < relop_count; i++){
-        if(strEqual(lexeme, relationalOps[i])){
-            return true;
-        }
-    }
-
-    return false;
+const char* getNoiseWord(const char* lexeme) {
+    if (strEqual(lexeme, "the")) return NOISE_THE;
+    if (strEqual(lexeme, "a")) return NOISE_A;
+    if (strEqual(lexeme, "an")) return NOISE_AN;
+    if (strEqual(lexeme, "as")) return NOISE_AS;
+    if (strEqual(lexeme, "then")) return NOISE_THEN;
+    if (strEqual(lexeme, "of")) return NOISE_OF;
+    if (strEqual(lexeme, "to")) return NOISE_TO;
+    return NULL;
 }
 
-bool isLogicalOp(const char* lexeme) {
-    for(int i = 0; i < boolop_count; i++){
-        if(strEqual(lexeme, logicalOps[i])){
-            return true;
-        }
-    }
-
-    return false;
+const char* getRelationalOp(const char* lexeme) {
+    if (strEqual(lexeme, "==")) return RELATIONAL_EQUAL_EQUAL;
+    if (strEqual(lexeme, "!=")) return RELATIONAL_NOT_EQUAL;
+    if (strEqual(lexeme, ">")) return RELATIONAL_GREATER;
+    if (strEqual(lexeme, ">=")) return RELATIONAL_GREATER_EQUAL;
+    if (strEqual(lexeme, "<")) return RELATIONAL_LESS;
+    if (strEqual(lexeme, "<=")) return RELATIONAL_LESS_EQUAL;
+    return NULL;
 }
 
-bool isArithmeticOp(const char* lexeme) {
-    for(int i = 0; i < arithop_count; i++){
-        if(strEqual(lexeme, arithmeticOps[i])){
-            return true;
-        }
-    }
-
-    return false;
+const char* getArithmeticOp(const char* lexeme) {
+    if (strEqual(lexeme, "+")) return ARITHMETIC_PLUS;
+    if (strEqual(lexeme, "-")) return ARITHMETIC_MINUS;
+    if (strEqual(lexeme, "*")) return ARITHMETIC_MULTIPLY;
+    if (strEqual(lexeme, "/")) return ARITHMETIC_DIVIDE;
+    if (strEqual(lexeme, "%")) return ARITHMETIC_MODULUS;
+    if (strEqual(lexeme, "^")) return ARITHMETIC_EXPONENT;
+    return NULL;
 }
 
-bool isDelimiter(const char* lexeme) {
-    for(int i = 0; i < delim_count; i++){
-        if(strEqual(lexeme, delimiters[i])){
-            return true;
-        }
-    }
+const char* getAssignmentOp(const char* lexeme) {
+    if (strEqual(lexeme, "=")) return ASSIGNMENT_ASSIGN;
+    if (strEqual(lexeme, "+=")) return ASSIGNMENT_PLUS_ASSIGN;
+    if (strEqual(lexeme, "-=")) return ASSIGNMENT_MINUS_ASSIGN;
+    return NULL;
+}
 
-    return false;
+const char* getDelimiter(const char* lexeme) {
+    if (strEqual(lexeme, "(")) return LPAREN;
+    if (strEqual(lexeme, ")")) return RPAREN;
+    if (strEqual(lexeme, "[")) return LBRACKET;
+    if (strEqual(lexeme, "]")) return RBRACKET;
+    if (strEqual(lexeme, ":")) return COLON;
+    if (strEqual(lexeme, ",")) return COMMA;
+    if (strEqual(lexeme, ".")) return DOT;
+    return NULL;
 }
 
 bool isComment(const char* lexeme) {
@@ -186,15 +195,30 @@ bool isSeparator(char c) {
 }
 
 const char* getTokenType(const char* lexeme) {
-    if (isKeyword(lexeme)) return KEYWORD;
-    if (isNoiseWord(lexeme)) return NOISE;
+    const char* kw = getKeyword(lexeme);
+    if (kw) return kw;
+    
+    const char* res = getReservedKeyword(lexeme);
+    if (res) return res;  // Return the specific reserved keyword token type
+    
+    const char* arith = getArithmeticOp(lexeme);
+    if (arith) return arith;  // Return specific arithmetic operator
+    
+    const char* rel = getRelationalOp(lexeme);
+    if (rel) return rel;  // Return specific relational operator
+    
+    const char* assign = getAssignmentOp(lexeme);
+    if (assign) return assign;  // Return specific assignment operator
+    
+    const char* delim = getDelimiter(lexeme);
+    if (delim) return delim;  // Return specific delimiter
+    
+    const char* noise = getNoiseWord(lexeme);
+    if (noise) return noise;  // Return specific noise word token
+    
     if (isComment(lexeme)) return COMMENT;
     if (isStringLiteral(lexeme)) return STRING_LITERAL;
     if (isIdentifier(lexeme)) return IDENTIFIER;
     if (isNumber(lexeme)) return NUMBER;
-    if (isRelationalOp(lexeme)) return REL_OP;
-    if (isLogicalOp(lexeme)) return LOG_OP;
-    if (isArithmeticOp(lexeme)) return ARITH_OP;
-    if (isDelimiter(lexeme)) return DELIMITER;
     return UNKNOWN;
 }
