@@ -55,19 +55,13 @@ No.  | Type                     | Lexeme
 50   | ARITHMETIC_DIVIDE        | /                                            
 51   | INTEGER_LITERAL          | 56                                           
 52   | COMMENT                  | # tis comment                                
-53   | COMMENT                  | ## this 
-komento
-##                          
+53   | MULTILINE_COMMENT        | ## this  komento ##                          
 54   | INVALID                  | {                                            
 55   | IDENTIFIER               | thing                                        
 56   | IDENTIFIER               | s                                            
 57   | KEYWORD_IN               | in                                           
 58   | IDENTIFIER               | v                                            
 59   | INVALID                  | alid}                                        
-60   | INVALID                  | "invalid string literal
-
-## another komento
-
-
+60   | INVALID                  | "invalid string literal  ## another komento  
 
 Total tokens: 60

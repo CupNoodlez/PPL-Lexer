@@ -13,6 +13,7 @@
 #define LOG_OP              "LOG_OP"
 #define ARITH_OP            "ARITH_OP"
 #define DELIMITER           "DELIMITER"
+#define MULTILINE_COMMENT   "MULTILINE_COMMENT"
 #define COMMENT             "COMMENT"
 #define STRING_LITERAL      "STRING_LITERAL"
 #define INVALID             "INVALID"
@@ -118,6 +119,7 @@ const char* getRelationalOp(const char* lexeme);
 const char* getAssignmentOp(const char* lexeme);
 const char* getDelimiter(const char* lexeme);
 bool isNoiseWord(const char* lexeme);
+bool isMultilineComment(const char* lexeme);
 bool isComment(const char* lexeme);
 bool isStringLiteral(const char* lexeme);
 bool isIdentifier(const char* lexeme);

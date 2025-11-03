@@ -145,6 +145,16 @@ const char* getDelimiter(const char* lexeme) {
     return NULL;
 }
 
+bool isMultilineComment(const char* lexeme){
+    if (lexeme[0] == '\0')
+        return false;
+    if (lexeme[0] == '#' && lexeme[1] == '#'){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 bool isComment(const char* lexeme) {
     if (lexeme[0] == '\0') 
         return false;
@@ -265,6 +275,7 @@ const char* getTokenType(const char* lexeme) {
     const char* noise = getNoiseWord(lexeme);
     if (noise) return noise;  // Return specific noise word token
     
+    if (isMultilineComment(lexeme)) return MULTILINE_COMMENT;
     if (isComment(lexeme)) return COMMENT;
     if (isStringLiteral(lexeme)) return STRING_LITERAL;
     if (isIdentifier(lexeme)) return IDENTIFIER;
