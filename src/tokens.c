@@ -1,9 +1,14 @@
 #include "tokens.h"
 #include <stdlib.h>
 
-const char* separators[] = {
-    ",", ":", ";", ".", "!", "?", "+", "-", "*", "/", "%", 
-    "(", ")", "[", "]"
+// Delimiters only (not operators)
+const char* delimiters[] = {
+    ",", ":", ".", "(", ")", "[", "]"
+};
+
+// Operators (arithmetic)
+const char* operators[] = {
+    "+", "-", "*", "/", "%", "=", "!", "<", ">"
 };
 
 // Character sets for identifier and number validation
@@ -11,7 +16,8 @@ const char digits[] = "0123456789";
 const char lowercase[] = "abcdefghijklmnopqrstuvwxyz";
 const char uppercase[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-const int sep_count = sizeof(separators) / sizeof(separators[0]);
+const int delim_count = sizeof(delimiters) / sizeof(delimiters[0]);
+const int op_count = sizeof(operators) / sizeof(operators[0]);
 
 bool strEqual(const char* a, const char* b) {
     int i = 0;
@@ -27,6 +33,14 @@ bool isInSet(char c, const char* set) {
         if (c == set[i]) return true;
     }
     return false;
+}
+
+bool isAlpha(char c) {
+    return isInSet(c, lowercase) || isInSet(c, uppercase);
+}
+
+bool isDigit(char c) {
+    return isInSet(c, digits);
 }
 
 const char* getKeyword(const char* lexeme) {
@@ -165,7 +179,7 @@ bool isIdentifier(const char* lexeme) {
     return true;
 }
 
-bool isNumber(const char* lexeme) {
+bool isIntegerLiteral(const char* lexeme) {
     if (lexeme[0] == '\0') return false;
     
     // All characters must be digits
@@ -178,15 +192,49 @@ bool isNumber(const char* lexeme) {
     return true;
 }
 
+bool isFloatLiteral(const char* lexeme) {
+    if (lexeme[0] == '\0') return false;
+    
+    bool hasDot = false;
+    
+    for (int i = 0; lexeme[i] != '\0'; i++) {
+        if (lexeme[i] == '.') {
+            if (hasDot) return false;  // More than one dot
+            hasDot = true;
+        } else if (!isInSet(lexeme[i], digits)) {
+            return false;  // Non-digit, non-dot character
+        }
+    }
+    
+    // Must have at least one dot to be a float
+    return hasDot;
+}
+
+bool isNumber(const char* lexeme) {
+    return isIntegerLiteral(lexeme) || isFloatLiteral(lexeme);
+}
+
 bool isWhitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-bool isSeparator(char c) {
+bool isDelimiter(char c) {
     char str[2] = {c, '\0'};
     
-    for (int i = 0; i < sep_count; i++) {
-        if (strEqual(str, separators[i])) {
+    for (int i = 0; i < delim_count; i++) {
+        if (strEqual(str, delimiters[i])) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool isOperator(char c) {
+    char str[2] = {c, '\0'};
+    
+    for (int i = 0; i < op_count; i++) {
+        if (strEqual(str, operators[i])) {
             return true;
         }
     }
@@ -219,6 +267,7 @@ const char* getTokenType(const char* lexeme) {
     if (isComment(lexeme)) return COMMENT;
     if (isStringLiteral(lexeme)) return STRING_LITERAL;
     if (isIdentifier(lexeme)) return IDENTIFIER;
-    if (isNumber(lexeme)) return NUMBER;
+    if (isFloatLiteral(lexeme)) return FLOAT_LITERAL;
+    if (isIntegerLiteral(lexeme)) return INTEGER_LITERAL;
     return UNKNOWN;
 }

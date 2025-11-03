@@ -5,11 +5,15 @@
 #include "helpers.h"
 
 typedef enum {
-    DEFAULT,        // default state (delimiters, unknowns)
-    IN_IDENTIFIER,  // handles all alphanumeric tokens (keywords, identifiers, numbers)
-    IN_STRING,      // handles string literals
+    START,          // starting state
+    IN_IDENTIFIER,  // handles identifiers and keywords
+    IN_NUMBER,      // handles numeric literals
     IN_OPERATOR,    // handles operators
-    IN_COMMENT      // handles comments
+    IN_COMMENT,     // handles comments
+    IN_STRING,      // handles string literals
+    IN_DELIM,       // handles delimiters
+    IN_BLANK,       // handles whitespace
+    DONE            // completion state
 } LexerState;
 
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
@@ -34,18 +38,18 @@ int main() {
     int buffer_index = 0, token_count = 0;
     int ch;
 
-    LexerState state = DEFAULT;
+    LexerState state = START;
 
     while ((ch = fgetc(fp)) != EOF) {
         switch (state) {
 
-            // --- Default: decide what to do with the next character ---
-            case DEFAULT:
+            // --- START: decide what to do with the next character ---
+            case START:
                 if (isWhitespace(ch)) {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = IN_BLANK;
+                    // Don't buffer whitespace
                 }
                 else if (ch == '#') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = IN_COMMENT;
                     lexeme_buffer[buffer_index++] = ch;
                     
@@ -58,39 +62,78 @@ int main() {
                     }
                 }
                 else if (ch == '"') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = IN_STRING;
                     lexeme_buffer[buffer_index++] = ch;
                 }
-                else if (ch == '=' || ch == '!' || ch == '<' || ch == '>') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                else if (isOperator(ch)) {
                     state = IN_OPERATOR;
                     lexeme_buffer[buffer_index++] = ch;
                 }
-                else if (isSeparator(ch)) {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    lexeme_buffer[0] = ch;
-                    lexeme_buffer[1] = '\0';
-                    str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
-                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
-                    token_count++;
+                else if (isDelimiter(ch)) {
+                    state = IN_DELIM;
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                else if (isDigit(ch)) {
+                    lexeme_buffer[buffer_index++] = ch;
+                    state = IN_NUMBER;
+                }
+                else if (isAlpha(ch)) {
+                    // Identifiers must start with a letter (not underscore)
+                    lexeme_buffer[buffer_index++] = ch;
+                    state = IN_IDENTIFIER;
                 }
                 else {
-                    // start of identifier or keyword
                     lexeme_buffer[buffer_index++] = ch;
                     state = IN_IDENTIFIER;
                 }
                 break;
 
+            // --- Whitespace ---
+            case IN_BLANK:
+                if (!isWhitespace(ch)) {
+                    // Transition back to START to process this character
+                    ungetc(ch, fp);
+                    state = START;
+                }
+                // Continue consuming whitespace
+                break;
+
             // --- Identifier or keyword ---
             case IN_IDENTIFIER:
-                if (isWhitespace(ch) || isSeparator(ch) || ch == '=' || ch == '!' || ch == '<' || ch == '>') {
+                if (isWhitespace(ch) || isDelimiter(ch) || isOperator(ch)) {
                     ungetc(ch, fp);  // push back for next iteration
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = DEFAULT;
+                    state = START;
                 } else {
+                    // After first character, underscores are allowed
                     lexeme_buffer[buffer_index++] = ch;
                 }
+                break;
+
+            // --- Number ---
+            case IN_NUMBER:
+                if (isDigit(ch) || ch == '.') {
+                    lexeme_buffer[buffer_index++] = ch;
+                } else if (isWhitespace(ch) || isDelimiter(ch) || isOperator(ch)) {
+                    ungetc(ch, fp);  // push back for next iteration
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = START;
+                } else {
+                    // Invalid character in number, but continue as identifier
+                    lexeme_buffer[buffer_index++] = ch;
+                    state = IN_IDENTIFIER;
+                }
+                break;
+
+            // --- Delimiter ---
+            case IN_DELIM:
+                lexeme_buffer[buffer_index] = '\0';
+                str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
+                str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                token_count++;
+                buffer_index = 0;
+                ungetc(ch, fp);  // push back current character
+                state = START;
                 break;
 
             // --- String literal ---
@@ -103,7 +146,7 @@ int main() {
                     str_copy(tokens[token_count].lexeme, lexeme_buffer);
                     token_count++;
                     buffer_index = 0;
-                    state = DEFAULT;
+                    state = START;
                 }
                 break;
 
@@ -119,7 +162,7 @@ int main() {
                 str_copy(tokens[token_count].lexeme, lexeme_buffer);
                 token_count++;
                 buffer_index = 0;
-                state = DEFAULT;
+                state = START;
                 break;
 
             // --- Comments ---
@@ -141,7 +184,7 @@ int main() {
                     str_copy(tokens[token_count].lexeme, lexeme_buffer);
                     token_count++;
                     buffer_index = 0;
-                    state = DEFAULT;
+                    state = START;
                 }
                 // Check if it's a multi-line comment (starts with ##)
                 else if (buffer_index >= 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] == '#') {
@@ -166,14 +209,19 @@ int main() {
                     str_copy(tokens[token_count].lexeme, lexeme_buffer);
                     token_count++;
                     buffer_index = 0;
-                    state = DEFAULT;
+                    state = START;
                 }
+                break;
+
+            // --- Done state (should not be reached in normal operation) ---
+            case DONE:
                 break;
         }        
     }
     // Handle leftover lexeme at EOF
     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
 
+    state = DONE;
     outputTokens(tokens);
     fclose(fp);
     return 0;

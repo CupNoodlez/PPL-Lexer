@@ -4,17 +4,18 @@
 #include <stdbool.h>   
 
 // Token type constants
-#define KEYWORD     "KEYWORD"
-#define NOISE       "NOISE"
-#define IDENTIFIER  "IDENTIFIER"
-#define NUMBER      "NUMBER"
-#define REL_OP      "REL_OP"
-#define LOG_OP      "LOG_OP"
-#define ARITH_OP    "ARITH_OP"
-#define DELIMITER   "DELIMITER"
-#define COMMENT     "COMMENT"
-#define STRING_LITERAL "STRING_LITERAL"
-#define UNKNOWN     "UNKNOWN"
+#define KEYWORD             "KEYWORD"
+#define NOISE               "NOISE"
+#define IDENTIFIER          "IDENTIFIER"
+#define INTEGER_LITERAL     "INTEGER_LITERAL"
+#define FLOAT_LITERAL       "FLOAT_LITERAL"
+#define REL_OP              "REL_OP"
+#define LOG_OP              "LOG_OP"
+#define ARITH_OP            "ARITH_OP"
+#define DELIMITER           "DELIMITER"
+#define COMMENT             "COMMENT"
+#define STRING_LITERAL      "STRING_LITERAL"
+#define UNKNOWN             "UNKNOWN"
 
 // Arithmetic operators
 #define ARITHMETIC_PLUS      "ARITHMETIC_PLUS"
@@ -115,14 +116,18 @@ const char* getArithmeticOp(const char* lexeme);
 const char* getRelationalOp(const char* lexeme);
 const char* getAssignmentOp(const char* lexeme);
 const char* getDelimiter(const char* lexeme);
-const char* getNoiseWord(const char* lexeme);
 bool isNoiseWord(const char* lexeme);
 bool isComment(const char* lexeme);
 bool isStringLiteral(const char* lexeme);
 bool isIdentifier(const char* lexeme);
 bool isNumber(const char* lexeme);
+bool isIntegerLiteral(const char* lexeme);
+bool isFloatLiteral(const char* lexeme);
 bool isWhitespace(char c);
-bool isSeparator(char c);
+bool isDelimiter(char c);
+bool isOperator(char c);
+bool isAlpha(char c);
+bool isDigit(char c);
 
 const char* getTokenType(const char* lexeme);
 

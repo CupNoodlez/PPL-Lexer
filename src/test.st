@@ -1,4 +1,4 @@
-while X.trust<80:
+            while X.trust<80.53:
     dialogue X: "Do you trust me yet?"
     ask "Yes or No?" as answer
     
