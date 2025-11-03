@@ -47,49 +47,43 @@ const char* getKeyword(const char* lexeme) {
     // Check regular keywords
     if (strEqual(lexeme, "character")) return KEYWORD_CHARACTER;
     if (strEqual(lexeme, "scene")) return KEYWORD_SCENE;
+    if (strEqual(lexeme, "template")) return KEYWORD_TEMPLATE;
     if (strEqual(lexeme, "dialogue")) return KEYWORD_DIALOGUE;
+    if (strEqual(lexeme, "narrate")) return KEYWORD_NARRATE;
     if (strEqual(lexeme, "choice")) return KEYWORD_CHOICE;
     if (strEqual(lexeme, "option")) return KEYWORD_OPTION;
+    if (strEqual(lexeme, "ask")) return KEYWORD_ASK;
     if (strEqual(lexeme, "if")) return KEYWORD_IF;
-    if (strEqual(lexeme, "then")) return KEYWORD_THEN;
     if (strEqual(lexeme, "else")) return KEYWORD_ELSE;
     if (strEqual(lexeme, "elif")) return KEYWORD_ELIF;
     if (strEqual(lexeme, "repeat")) return KEYWORD_REPEAT;
     if (strEqual(lexeme, "for")) return KEYWORD_FOR;
-    if (strEqual(lexeme, "do")) return KEYWORD_DO;
-    if (strEqual(lexeme, "while")) return KEYWORD_WHILE;
-    if (strEqual(lexeme, "do-while")) return KEYWORD_DO_WHILE;
-    if (strEqual(lexeme, "jump")) return KEYWORD_JUMP;
-    if (strEqual(lexeme, "stop")) return KEYWORD_STOP;
-    if (strEqual(lexeme, "continue")) return KEYWORD_CONTINUE;
-    if (strEqual(lexeme, "in")) return KEYWORD_IN;
     if (strEqual(lexeme, "show")) return KEYWORD_SHOW;
+    if (strEqual(lexeme, "start")) return KEYWORD_START;
     if (strEqual(lexeme, "end")) return KEYWORD_END;
-    if (strEqual(lexeme, "True")) return KEYWORD_TRUE;
-    if (strEqual(lexeme, "False")) return KEYWORD_FALSE;
     if (strEqual(lexeme, "becomes")) return KEYWORD_BECOMES;
-    if (strEqual(lexeme, "emotion")) return KEYWORD_EMOTION;
-    if (strEqual(lexeme, "action")) return KEYWORD_ACTION;
-    if (strEqual(lexeme, "set")) return KEYWORD_SET;
     if (strEqual(lexeme, "and")) return KEYWORD_AND;
-    if (strEqual(lexeme, "or")) return KEYWORD_OR;
     if (strEqual(lexeme, "not")) return KEYWORD_NOT;
+    if (strEqual(lexeme, "or")) return KEYWORD_OR;
     if (strEqual(lexeme, "is")) return KEYWORD_IS;
-    if (strEqual(lexeme, "when")) return KEYWORD_WHEN;
+    if (strEqual(lexeme, "until")) return KEYWORD_UNTIL;
+    if (strEqual(lexeme, "times")) return KEYWORD_TIMES;
+
     
     return NULL;  // Not a keyword
 }
 
 const char* getReservedKeyword(const char* lexeme) {
-    if (strEqual(lexeme, "null")) return RES_KEY_NULL;
+
+    if (strEqual(lexeme, "true")) return RES_KEY_TRUE;
+    if (strEqual(lexeme, "false")) return RES_KEY_FALSE;
     if (strEqual(lexeme, "return")) return RES_KEY_RETURN;
-    if (strEqual(lexeme, "until")) return RES_KEY_UNTIL;
-    if (strEqual(lexeme, "times")) return RES_KEY_TIMES;
+    if (strEqual(lexeme, "in")) return RES_KEY_IN;
     if (strEqual(lexeme, "error")) return RES_KEY_ERROR;
-    if (strEqual(lexeme, "except")) return RES_KEY_EXCEPT;
     if (strEqual(lexeme, "fixed")) return RES_KEY_FIXED;
     if (strEqual(lexeme, "break")) return RES_KEY_BREAK;
-    if (strEqual(lexeme, "none")) return RES_KEY_NONE;
+    if (strEqual(lexeme, "continue")) return RES_KEY_CONTINUE;
+    if (strEqual(lexeme, "pass")) return RES_KEY_PASS;
     if (strEqual(lexeme, "with")) return RES_KEY_WITH;
     
     return NULL;  // Not a reserved keyword
@@ -131,6 +125,9 @@ const char* getAssignmentOp(const char* lexeme) {
     if (strEqual(lexeme, "=")) return ASSIGNMENT_ASSIGN;
     if (strEqual(lexeme, "+=")) return ASSIGNMENT_PLUS_ASSIGN;
     if (strEqual(lexeme, "-=")) return ASSIGNMENT_MINUS_ASSIGN;
+    if (strEqual(lexeme, "*=")) return ASSIGNMENT_MULT_ASSIGN;
+    if (strEqual(lexeme, "/=")) return ASSIGNMENT_DIV_ASSIGN;
+    if (strEqual(lexeme, "%=")) return ASSIGNMENT_MOD_ASSIGN;
     return NULL;
 }
 
