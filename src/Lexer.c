@@ -5,10 +5,11 @@
 #include "helpers.h"
 
 typedef enum {
-    DEFAULT,
-    IN_IDENTIFIER,
-    IN_STRING,
-    IN_OPERATOR
+    DEFAULT,        // default state (delimiters, unknowns)
+    IN_IDENTIFIER,  // handles all alphanumeric tokens (keywords, identifiers, numbers)
+    IN_STRING,      // handles string literals
+    IN_OPERATOR,    // handles operators
+    IN_COMMENT      // handles comments
 } LexerState;
 
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
@@ -43,9 +44,27 @@ int main() {
                 if (isWhitespace(ch)) {
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                 }
+                else if (ch == '#') {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = IN_COMMENT;
+                    lexeme_buffer[buffer_index++] = ch;
+                    
+                    // Check if it's a multi-line comment (##)
+                    int next_ch = fgetc(fp);
+                    if (next_ch == '#') {
+                        lexeme_buffer[buffer_index++] = next_ch;
+                    } else if (next_ch != EOF) {
+                        ungetc(next_ch, fp);
+                    }
+                }
                 else if (ch == '"') {
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = IN_STRING;
+                    lexeme_buffer[buffer_index++] = ch;
+                }
+                else if (ch == '=' || ch == '!' || ch == '<' || ch == '>') {
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = IN_OPERATOR;
                     lexeme_buffer[buffer_index++] = ch;
                 }
                 else if (isSeparator(ch)) {
@@ -55,11 +74,6 @@ int main() {
                     str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
                     str_copy(tokens[token_count].lexeme, lexeme_buffer);
                     token_count++;
-                }
-                else if (ch == '=' || ch == '!' || ch == '<' || ch == '>') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = IN_OPERATOR;
-                    lexeme_buffer[buffer_index++] = ch;
                 }
                 else {
                     // start of identifier or keyword
@@ -107,9 +121,52 @@ int main() {
                 buffer_index = 0;
                 state = DEFAULT;
                 break;
-        }
-    }
 
+            // --- Comments ---
+            case IN_COMMENT:
+                lexeme_buffer[buffer_index++] = ch;
+                
+                // Check if it's a single-line comment (starts with single #)
+                if (buffer_index == 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] != '#') {
+                    // Single-line comment: read until newline
+                    while (ch != '\n' && (ch = fgetc(fp)) != EOF) {
+                        lexeme_buffer[buffer_index++] = ch;
+                    }
+                    lexeme_buffer[buffer_index] = '\0';
+                    str_copy(tokens[token_count].type, COMMENT);
+                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                    token_count++;
+                    buffer_index = 0;
+                    state = DEFAULT;
+                }
+                // Check if it's a multi-line comment (starts with ##)
+                else if (buffer_index >= 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] == '#') {
+                    // Multi-line comment: read until closing ##
+                    bool found_closing = false;
+                    while (!found_closing && (ch = fgetc(fp)) != EOF) {
+                        lexeme_buffer[buffer_index++] = ch;
+                        
+                        // Check for closing ##
+                        if (ch == '#') {
+                            int next_ch = fgetc(fp);
+                            if (next_ch == '#') {
+                                lexeme_buffer[buffer_index++] = next_ch;
+                                found_closing = true;
+                            } else if (next_ch != EOF) {
+                                ungetc(next_ch, fp);
+                            }
+                        }
+                    }
+                    lexeme_buffer[buffer_index] = '\0';
+                    str_copy(tokens[token_count].type, COMMENT);
+                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
+                    token_count++;
+                    buffer_index = 0;
+                    state = DEFAULT;
+                }
+                break;
+        }        
+    }
     // Handle leftover lexeme at EOF
     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
 

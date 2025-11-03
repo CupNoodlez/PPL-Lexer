@@ -23,12 +23,12 @@ const char* arithmeticOps[] = {
 };
 
 const char* delimiters[] = {
-    ",", ":","\"", "\'", "."
+    ",", ":","\"", "\'", ".", "(", ")", "[", "]"
 };
 
 const char* separators[] = {
     ",", ":", ";", ".", "!", "?", "+", "-", "*", "/", "%", 
-    "(", ")", "[", "]", " ", "\n", "\t", "#"
+    "(", ")", "[", "]"
 };
 
 // Character sets for identifier and number validation
