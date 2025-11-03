@@ -32,17 +32,17 @@ void outputTokens(Token* tokens) {
         return;
     }
     // Console table header
-    printf("\n╔═════════════════════════════════════════════════════════════════════════════╗\n");
-    printf("║                                  TOKEN TABLE                                ║\n");
-    printf("╠═════════════════════════════════════════════════════════════════════════════╣\n");
-    printf("║ %-4s │ %-20s │ %-45s ║\n", "No.", "Type", "Lexeme");
-    printf("╠═════════════════════════════════════════════════════════════════════════════╣\n");
+    printf("\n╔═════════════════════════════════════════════════════════════════════════════════╗\n");
+    printf("║                                     TOKEN TABLE                                 ║\n");
+    printf("╠═════════════════════════════════════════════════════════════════════════════════╣\n");
+    printf("║ %-4s │ %-24s │ %-45s ║\n", "No.", "Type", "Lexeme");
+    printf("╠═════════════════════════════════════════════════════════════════════════════════╣\n");
 
     // File table header
     fprintf(outputFile, "TOKEN TABLE\n");
     fprintf(outputFile, "===========\n\n");
-    fprintf(outputFile, "%-4s | %-20s | %-45s\n", "No.", "Type", "Lexeme");
-    fprintf(outputFile, "-----+----------------------+-----------------------------------------------\n");
+    fprintf(outputFile, "%-4s | %-24s | %-45s\n", "No.", "Type", "Lexeme");
+    fprintf(outputFile, "-----+-------------------------+-----------------------------------------------\n");
 
 
     // Count tokens and print them
@@ -51,11 +51,11 @@ void outputTokens(Token* tokens) {
         count++;
         
         // Print each data
-        printf("║ %-4d │ %-20s │ %-45s ║\n", count, tokens[count-1].type, tokens[count-1].lexeme);
-        fprintf(outputFile, "%-4d | %-20s | %-45s\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+        printf("║ %-4d │ %-24s │ %-45s ║\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+        fprintf(outputFile, "%-4d | %-24s | %-45s\n", count, tokens[count-1].type, tokens[count-1].lexeme);
     }
 
-    printf("╚═════════════════════════════════════════════════════════════════════════════╝\n");
+    printf("╚═════════════════════════════════════════════════════════════════════════════════╝\n");
     printf("\nTotal tokens: %d\n", count);
     printf("Output saved to: tokens_output.txt\n\n");
 

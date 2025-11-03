@@ -102,7 +102,7 @@
 #define NOISE_TO          "NOISE_TO"
 
 typedef struct {
-    char type[20];        
+    char type[24];        
     char lexeme[100];      
 } Token;
 
