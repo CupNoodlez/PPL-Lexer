@@ -243,6 +243,10 @@ bool isOperator(char c) {
     return false;
 }
 
+bool isSeparator(char c) {
+    return isWhitespace(c) || isDelimiter(c) || isOperator(c);
+}
+
 const char* getTokenType(const char* lexeme) {
     const char* kw = getKeyword(lexeme);
     if (kw) return kw;
