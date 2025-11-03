@@ -278,6 +278,21 @@ void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *b
     if (*buffer_index == 0) return;
     lexeme_buffer[*buffer_index] = '\0';
 
+    // Replace newline and carriage return characters with a space so the comment
+    // text doesn't break table lines when printed. Then trim trailing spaces.
+    for (int i = 0; lexeme_buffer[i] != '\0'; ++i) {
+        if (lexeme_buffer[i] == '\n' || lexeme_buffer[i] == '\r') {
+            lexeme_buffer[i] = ' ';
+        }
+    }
+    // Trim trailing spaces/tabs
+    int len = *buffer_index;
+    while (len > 0 && (lexeme_buffer[len - 1] == ' ' || lexeme_buffer[len - 1] == '\t')) {
+        lexeme_buffer[len - 1] = '\0';
+        len--;
+    }
+    *buffer_index = len;
+
     str_copy(tokens[*token_count].type, getTokenType(lexeme_buffer));
     str_copy(tokens[*token_count].lexeme, lexeme_buffer);
     (*token_count)++;
