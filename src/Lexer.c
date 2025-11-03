@@ -132,6 +132,10 @@ int main() {
                     while (ch != '\n' && (ch = fgetc(fp)) != EOF) {
                         lexeme_buffer[buffer_index++] = ch;
                     }
+                    // Remove the last character if it's a newline
+                    if (buffer_index > 0 && lexeme_buffer[buffer_index - 1] == '\n') {
+                        buffer_index--;
+                    }
                     lexeme_buffer[buffer_index] = '\0';
                     str_copy(tokens[token_count].type, COMMENT);
                     str_copy(tokens[token_count].lexeme, lexeme_buffer);
