@@ -180,49 +180,39 @@ int main() {
 
             // --- Comments ---
             case IN_COMMENT:
-                // Check if it's a multi-line comment (##)
-                int next_ch = fgetc(fp);
-                if (next_ch == '#') {
+                lexeme_buffer[buffer_index++] = ch;
+                // Check if it's a single-line comment (starts with single #)
+                if (buffer_index == 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] != '#') {
+                    // Single-line comment: read until newline
+                    while (ch != '\n' && (ch = fgetc(fp)) != EOF) {
+                        lexeme_buffer[buffer_index++] = ch;
+                    }
+                    // Remove the last character if it's a newline
+                    if (buffer_index > 0 && lexeme_buffer[buffer_index - 1] == '\n') {
+                        buffer_index--;
+                    }
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
+                    state = START;
+                }
+                // Check if it's a multi-line comment (starts with ##)
+                else if (buffer_index >= 2 && lexeme_buffer[0] == '#' && lexeme_buffer[1] == '#') {
                     // Multi-line comment: read until closing ##
-                    lexeme_buffer[buffer_index++] = ch;      // first #
-                    lexeme_buffer[buffer_index++] = next_ch; // second #
-                    
                     bool found_closing = false;
                     while (!found_closing && (ch = fgetc(fp)) != EOF) {
                         lexeme_buffer[buffer_index++] = ch;
                         
                         // Check for closing ##
                         if (ch == '#') {
-                            int peek = fgetc(fp);
-                            if (peek == '#') {
-                                lexeme_buffer[buffer_index++] = peek;
+                            int next_ch = fgetc(fp);
+                            if (next_ch == '#') {
+                                lexeme_buffer[buffer_index++] = next_ch;
                                 found_closing = true;
-                            } else if (peek != EOF) {
-                                ungetc(peek, fp);
+                            } else if (next_ch != EOF) {
+                                ungetc(next_ch, fp);
                             }
                         }
                     }
                     finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = START;
-                } else {
-                    // Single-line comment: read until newline
-                    lexeme_buffer[buffer_index++] = ch; // the #
-                    if (next_ch != EOF && next_ch != '\n') {
-                        ungetc(next_ch, fp);
-                    }
-                    
-                    while ((ch = fgetc(fp)) != EOF && ch != '\n') {
-                        lexeme_buffer[buffer_index++] = ch;
-                    }
-                    
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    
-                    // After single-line comment, handle the newline
-                    if (ch == '\n') {
-                        emit_token(tokens, &token_count, NEWLINE, "\\n");
-                        at_line_start = true;
-                        current_indent = 0;
-                    }
                     state = START;
                 }
                 break;
