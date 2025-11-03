@@ -6,3 +6,5 @@ tokens_output.txt
 .vscode/
 src/program.exe
 src/test.c
+input.st
+Symbol\ Table.txt

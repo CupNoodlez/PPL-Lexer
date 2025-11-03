@@ -16,6 +16,9 @@
 #define MULTILINE_COMMENT   "MULTILINE_COMMENT"
 #define COMMENT             "COMMENT"
 #define STRING_LITERAL      "STRING_LITERAL"
+#define NEWLINE             "NEWLINE"
+#define INDENT              "INDENT"
+#define DEDENT              "DEDENT"
 #define INVALID             "INVALID"
 
 // Arithmetic operators
@@ -125,6 +128,7 @@ bool isFloatLiteral(const char* lexeme);
 bool isWhitespace(char c);
 bool isDelimiter(char c);
 bool isOperator(char c);
+bool isSeparator(char c);
 bool isAlpha(char c);
 bool isDigit(char c);
 
