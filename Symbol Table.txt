@@ -1,0 +1,73 @@
+TOKEN TABLE
+===========
+
+No.  | Type                     | Lexeme                                       
+-----+-------------------------+-----------------------------------------------
+1    | KEYWORD_WHILE            | while                                        
+2    | IDENTIFIER               | X                                            
+3    | DOT                      | .                                            
+4    | IDENTIFIER               | trust                                        
+5    | RELATIONAL_LESS          | <                                            
+6    | INVALID                  | 80..53                                       
+7    | COLON                    | :                                            
+8    | KEYWORD_DIALOGUE         | dialogue                                     
+9    | IDENTIFIER               | X                                            
+10   | COLON                    | :                                            
+11   | STRING_LITERAL           | "Do you trust me yet?"                       
+12   | IDENTIFIER               | ask                                          
+13   | STRING_LITERAL           | "Yes or No?"                                 
+14   | NOISE_AS                 | as                                           
+15   | IDENTIFIER               | answer                                       
+16   | KEYWORD_IF               | if                                           
+17   | IDENTIFIER               | answer                                       
+18   | RELATIONAL_EQUAL_EQUAL   | ==                                           
+19   | STRING_LITERAL           | "Yes"                                        
+20   | COLON                    | :                                            
+21   | IDENTIFIER               | X                                            
+22   | DOT                      | .                                            
+23   | IDENTIFIER               | trust                                        
+24   | ASSIGNMENT_PLUS_ASSIGN   | +=                                           
+25   | INTEGER_LITERAL          | 10                                           
+26   | KEYWORD_EMOTION          | emotion                                      
+27   | IDENTIFIER               | X                                            
+28   | STRING_LITERAL           | "smiles_softly"                              
+29   | KEYWORD_ELSE             | else                                         
+30   | COLON                    | :                                            
+31   | IDENTIFIER               | X                                            
+32   | DOT                      | .                                            
+33   | IDENTIFIER               | trust                                        
+34   | ASSIGNMENT_PLUS_ASSIGN   | +=                                           
+35   | INTEGER_LITERAL          | 5                                            
+36   | KEYWORD_EMOTION          | emotion                                      
+37   | IDENTIFIER               | X                                            
+38   | STRING_LITERAL           | "looks_hopeful"                              
+39   | IDENTIFIER               | x                                            
+40   | ASSIGNMENT_ASSIGN        | =                                            
+41   | INTEGER_LITERAL          | 5                                            
+42   | IDENTIFIER               | x                                            
+43   | ARITHMETIC_FLOOR_DIVIDE  | //                                           
+44   | INTEGER_LITERAL          | 5                                            
+45   | IDENTIFIER               | x                                            
+46   | ARITHMETIC_DIVIDE        | /                                            
+47   | INTEGER_LITERAL          | 5                                            
+48   | IDENTIFIER               | x                                            
+49   | ARITHMETIC_FLOOR_DIVIDE  | //                                           
+50   | ARITHMETIC_DIVIDE        | /                                            
+51   | INTEGER_LITERAL          | 56                                           
+52   | COMMENT                  | # tis comment                                
+53   | COMMENT                  | ## this 
+komento
+##                          
+54   | INVALID                  | {                                            
+55   | IDENTIFIER               | thing                                        
+56   | IDENTIFIER               | s                                            
+57   | KEYWORD_IN               | in                                           
+58   | IDENTIFIER               | v                                            
+59   | INVALID                  | alid}                                        
+60   | INVALID                  | "invalid string literal
+
+## another komento
+
+
+
+Total tokens: 60

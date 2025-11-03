@@ -120,6 +120,7 @@ const char* getArithmeticOp(const char* lexeme) {
     if (strEqual(lexeme, "+")) return ARITHMETIC_PLUS;
     if (strEqual(lexeme, "-")) return ARITHMETIC_MINUS;
     if (strEqual(lexeme, "*")) return ARITHMETIC_MULTIPLY;
+    if (strEqual(lexeme, "//")) return ARITHMETIC_FLOOR_DIVIDE;
     if (strEqual(lexeme, "/")) return ARITHMETIC_DIVIDE;
     if (strEqual(lexeme, "%")) return ARITHMETIC_MODULUS;
     if (strEqual(lexeme, "^")) return ARITHMETIC_EXPONENT;

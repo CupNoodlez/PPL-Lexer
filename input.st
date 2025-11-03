@@ -10,6 +10,8 @@
         emotion X "looks_hopeful"
 x = 5
 x//5
+x/5
+x///56
 # tis comment
 
 ## this 

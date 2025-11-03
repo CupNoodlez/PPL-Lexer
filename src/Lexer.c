@@ -145,10 +145,16 @@ int main() {
                 }
                 break;
 
-            // --- Operators (e.g. ==, <=, !=) ---
+            // --- Operators (e.g. ==, <=, !=, //) ---
             case IN_OPERATOR:
-                if (ch == '=') lexeme_buffer[buffer_index++] = ch;
-                else ungetc(ch, fp);
+                if (ch == '=') {
+                    lexeme_buffer[buffer_index++] = ch;
+                } else if (lexeme_buffer[0] == '/' && ch == '/') {
+                    // Handle floor division operator //
+                    lexeme_buffer[buffer_index++] = ch;
+                } else {
+                    ungetc(ch, fp);
+                }
 
                 finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                 state = START;
