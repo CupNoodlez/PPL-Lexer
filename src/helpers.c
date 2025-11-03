@@ -26,7 +26,7 @@ int read_file_ext(const char *filename){
 
 
 void outputTokens(Token* tokens) {
-    FILE *outputFile = fopen("tokens_output.txt", "w");
+    FILE *outputFile = fopen("Symbol Table.txt", "w");
     if (!outputFile) {
         printf("Error: Could not create output file.\n");
         return;

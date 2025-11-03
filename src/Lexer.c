@@ -30,7 +30,6 @@ int main() {
         printf("Error opening file.\n");
         return 1;
     }
-
     printf("File opened successfully!\n");
 
     Token tokens[1000];
@@ -127,11 +126,7 @@ int main() {
 
             // --- Delimiter ---
             case IN_DELIM:
-                lexeme_buffer[buffer_index] = '\0';
-                str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
-                str_copy(tokens[token_count].lexeme, lexeme_buffer);
-                token_count++;
-                buffer_index = 0;
+                finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                 ungetc(ch, fp);  // push back current character
                 state = START;
                 break;
@@ -152,16 +147,10 @@ int main() {
 
             // --- Operators (e.g. ==, <=, !=) ---
             case IN_OPERATOR:
-                if (ch == '=') {
-                    lexeme_buffer[buffer_index++] = ch;
-                } else {
-                    ungetc(ch, fp);
-                }
-                lexeme_buffer[buffer_index] = '\0';
-                str_copy(tokens[token_count].type, getTokenType(lexeme_buffer));
-                str_copy(tokens[token_count].lexeme, lexeme_buffer);
-                token_count++;
-                buffer_index = 0;
+                if (ch == '=') lexeme_buffer[buffer_index++] = ch;
+                else ungetc(ch, fp);
+
+                finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                 state = START;
                 break;
 
@@ -179,11 +168,7 @@ int main() {
                     if (buffer_index > 0 && lexeme_buffer[buffer_index - 1] == '\n') {
                         buffer_index--;
                     }
-                    lexeme_buffer[buffer_index] = '\0';
-                    str_copy(tokens[token_count].type, COMMENT);
-                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
-                    token_count++;
-                    buffer_index = 0;
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = START;
                 }
                 // Check if it's a multi-line comment (starts with ##)
@@ -204,11 +189,7 @@ int main() {
                             }
                         }
                     }
-                    lexeme_buffer[buffer_index] = '\0';
-                    str_copy(tokens[token_count].type, COMMENT);
-                    str_copy(tokens[token_count].lexeme, lexeme_buffer);
-                    token_count++;
-                    buffer_index = 0;
+                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
                     state = START;
                 }
                 break;

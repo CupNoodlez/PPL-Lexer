@@ -15,7 +15,7 @@
 #define DELIMITER           "DELIMITER"
 #define COMMENT             "COMMENT"
 #define STRING_LITERAL      "STRING_LITERAL"
-#define UNKNOWN             "UNKNOWN"
+#define INVALID             "INVALID"
 
 // Arithmetic operators
 #define ARITHMETIC_PLUS      "ARITHMETIC_PLUS"

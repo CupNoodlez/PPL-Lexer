@@ -269,5 +269,5 @@ const char* getTokenType(const char* lexeme) {
     if (isIdentifier(lexeme)) return IDENTIFIER;
     if (isFloatLiteral(lexeme)) return FLOAT_LITERAL;
     if (isIntegerLiteral(lexeme)) return INTEGER_LITERAL;
-    return UNKNOWN;
+    return INVALID;
 }

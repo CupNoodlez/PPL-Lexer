@@ -1,4 +1,4 @@
-            while X.trust<80.53:
+            while X.trust<80..53:
     dialogue X: "Do you trust me yet?"
     ask "Yes or No?" as answer
     
@@ -9,7 +9,7 @@
         X.trust += 5
         emotion X "looks_hopeful"
 x = 5
-
+x//5
 # tis comment
 
 ## this 
