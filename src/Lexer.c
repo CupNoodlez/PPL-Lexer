@@ -17,6 +17,7 @@ typedef enum {
     IN_BLANK,          // handles whitespace
 } LexerState;
 
+
 void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
 void emit_token(Token *tokens, int *token_count, const char *type, const char *lexeme);
 void handle_indentation(Token *tokens, int *token_count, int new_indent, int *indent_stack, int *stack_size);
@@ -52,7 +53,6 @@ int main() {
 
     while ((ch = fgetc(fp)) != EOF) {
         switch (state) {
-
             // --- START: decide what to do with the next character ---
             case START:
                 // Handle indentation at line start
@@ -156,7 +156,6 @@ int main() {
                     flush_token(tokens, &token_count, lexeme_buffer, &buffer_index, ch, fp, &state);
                 } else {
                     lexeme_buffer[buffer_index++] = ch;
-                    state = IN_IDENTIFIER;
                 }
                 break;
 

@@ -229,10 +229,6 @@ bool isFloatLiteral(const char* lexeme) {
     return hasDot;
 }
 
-bool isNumber(const char* lexeme) {
-    return isIntegerLiteral(lexeme) || isFloatLiteral(lexeme);
-}
-
 bool isWhitespace(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
