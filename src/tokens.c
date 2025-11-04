@@ -146,16 +146,20 @@ bool isMultilineComment(const char* lexeme){
     if (lexeme[0] == '\0')
         return false;
     if (lexeme[0] == '#' && lexeme[1] == '#'){
-        return true;
-    }else{
-        return false;
+        int len = 0;
+        while (lexeme[len] != '\0') len++;
+
+        if (len >= 4 && lexeme[len-2] == '#' && lexeme[len-1] == '#'){
+            return true;
+        } 
     }
+    return false;
 }
 
 bool isComment(const char* lexeme) {
     if (lexeme[0] == '\0') 
         return false;
-    return lexeme[0] == '#';
+    return lexeme[0] == '#' && lexeme[1] != '#';
 }
 
 bool isStringLiteral(const char* lexeme) {
