@@ -24,7 +24,11 @@ void handle_indentation(Token *tokens, int *token_count, int new_indent, int *in
 void flush_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index, int ch, FILE *fp, LexerState *state);
 
 int main() {
-    char filename[256] = "input.st";
+    char filename[256];
+
+    // user inputs filename
+    printf("Enter filename: ");
+    scanf("%255s", filename);  
     if (!read_file_ext(filename)) {
         printf("Please enter a valid .st file format.\n");
         return 1;
@@ -182,7 +186,7 @@ int main() {
                 }
                 break;
 
-            // --- Operators (e.g. ==, <=, !=, //) ---
+            // --- Operators (e.g. ==, <=, >=, !=, //) ---
             case IN_OPERATOR:
                 if (ch == '=') {
                     lexeme_buffer[buffer_index++] = ch;
