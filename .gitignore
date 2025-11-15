@@ -1,0 +1,18 @@
+# general
+.vscode/
+Tokens.txt
+
+
+# Lexer
+Lexical-Analyzer/obj/
+Lexical-Analyzer/Lexer.exe
+Lexical-Analyzer/Lexer
+Lexical-Analyzer/Lexer.bak
+Lexical-Analyzer/src/program.exe
+Lexical-Analyzer/src/test.c
+Lexical-Analyzer/SymbolTable.txt
+
+
+# Parser
+
+
