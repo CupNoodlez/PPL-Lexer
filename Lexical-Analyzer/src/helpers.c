@@ -26,17 +26,16 @@ int read_file_ext(const char *filename){
 
 
 void outputTokens(Token* tokens) {
-    FILE *outputFile = fopen("Symbol Table.txt", "w");
+    FILE *outputFile = fopen("SymbolTable.txt", "w");
     if (!outputFile) {
         printf("Error: Could not create output file.\n");
         return;
     }
-    // Console table header
-    printf("\n╔═══════════════════════════════════════════════════════════════════════════════════╗\n");
-    printf("║                                    TOKEN TABLE                                    ║\n");
-    printf("╠═══════════════════════════════════════════════════════════════════════════════════╣\n");
-    printf("║ %-4s │ %-26s │ %-45s ║\n", "No.", "Type", "Lexeme");
-    printf("╠═══════════════════════════════════════════════════════════════════════════════════╣\n");
+    FILE *outputTokenFile = fopen("../Tokens.txt", "w");
+    if (!outputTokenFile) {
+        printf("Error: Could not create output token file.\n");
+        return;
+    }
 
     // File table header
     fprintf(outputFile, "TOKEN TABLE\n");
@@ -49,15 +48,13 @@ void outputTokens(Token* tokens) {
     int count = 0;
     while (tokens[count].type[0] != '\0') {
         count++;
-        
-        // Print each data
-        printf("║ %-4d │ %-26s │ %-45s ║\n", count, tokens[count-1].type, tokens[count-1].lexeme);
         fprintf(outputFile, "%-4d | %-26s | %-45s\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+        fprintf(outputTokenFile, "%s\n", tokens[count-1].type);
     }
 
-    printf("╚═══════════════════════════════════════════════════════════════════════════════════╝\n");
     printf("\nTotal tokens: %d\n", count);
-    printf("Output saved to: tokens_output.txt\n\n");
+    printf("Output saved to: Lexical-Analyzer/SymbolTable.txt\n\n");
+    printf("Token types saved to: Tokens.txt\n");
 
     // Print to file
     fprintf(outputFile, "\nTotal tokens: %d\n", count);
