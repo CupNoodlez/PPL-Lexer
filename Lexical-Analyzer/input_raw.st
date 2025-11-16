@@ -14,6 +14,15 @@ Hero villain
 
 ( ) [ ] : , .
 
+'a' "THis is a string baby
+"
+
+# This is a commment
+
+## This is a multiline comment
+
+yes multiline
+##
 
 and or not is
 

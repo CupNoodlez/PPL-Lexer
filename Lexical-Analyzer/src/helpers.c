@@ -64,6 +64,11 @@ void make_token(Token *tokens, int *tokenCount,
     memcpy(tokens[*tokenCount].lexeme, start, length);
     tokens[*tokenCount].lexeme[length] = '\0';
 
+    // remove newlines for pretty print
+    for (int i = 0; tokens[*tokenCount].lexeme[i] != '\0'; ++i)
+        if (tokens[*tokenCount].lexeme[i] == '\n') 
+            tokens[*tokenCount].lexeme[i] = ' ';
+
     // copy token type
     strcpy(tokens[*tokenCount].type, type);
 

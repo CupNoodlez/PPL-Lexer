@@ -5,15 +5,15 @@
 #include "helpers.h"
 
 int main() {
-    char filename[256];
+    char filename[256] = "input_raw.st";
 
     // user inputs filename
-    printf("Enter filename: ");
-    scanf("%255s", filename);  
-    if (!read_file_ext(filename)) {
-        printf("Please enter a valid .st file format.\n");
-        return 1;
-    }
+    // printf("Enter filename: ");
+    // scanf("%255s", filename);  
+    // if (!read_file_ext(filename)) {
+    //     printf("Please enter a valid .st file format.\n");
+    //     return 1;
+    // }
     unsigned int size;
     char *inputBuffer = read_file(filename, &size);
     if (!inputBuffer) {
@@ -59,12 +59,49 @@ int main() {
                 default: goto INVALID;
             }
         }
+        /********************[WHITESPACE]********************/
         BLANK: { 
             ch = *++cursor;
             if (isspace(ch)) goto BLANK; 
             else continue; 
         }
-
+        /********************[DELIMITERS]********************/
+        LPAREN: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "LPAREN");
+            continue;
+        }
+        RPAREN: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RPAREN");
+            continue;
+        }
+        LBRACKET: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "LBRACKET");
+            continue;
+        }
+        RBRACKET: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RBRACKET");
+            continue;
+        }
+        COLON: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "COLON");
+            continue;
+        }
+        COMMA: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "COMMA");
+            continue;
+        }
+        DOT: {
+            ++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "DOT");
+            continue;
+        }
+        /********************[OPERATORS]********************/
         ARITHMETIC_PLUS: { 
             ch = *++cursor;
             if (ch == '=') goto ASSIGNMENT_PLUS_ASSIGN;
@@ -103,17 +140,17 @@ int main() {
             else goto INVALID;
         }
         ARITHMETIC_FLOOR_DIVIDE: { 
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_FLOOR_DIVIDE");
             continue;
         }
         ARITHMETIC_MODULUS: { 
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_MODULUS");
             continue;
         }
         ARITHMETIC_EXPONENT: { 
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_EXPONENT");
             continue;
         }
@@ -127,27 +164,27 @@ int main() {
             else goto INVALID;
         }
         ASSIGNMENT_PLUS_ASSIGN: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_PLUS_ASSIGN");
             continue;
         }
         ASSIGNMENT_MINUS_ASSIGN: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MINUS_ASSIGN");
             continue;
         }
         ASSIGNMENT_MULT_ASSIGN: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MULT_ASSIGN");
             continue;
         }
         ASSIGNMENT_DIV_ASSIGN: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_DIV_ASSIGN");
             continue;
         }
         ASSIGNMENT_MOD_ASSIGN: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MOD_ASSIGN");
             continue;
         }
@@ -175,63 +212,26 @@ int main() {
             else goto INVALID;
         }
         RELATIONAL_NOT_EQUAL: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_NOT_EQUAL");
             continue;
         }
         RELATIONAL_EQUAL_EQUAL: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_EQUAL_EQUAL");
             continue;
         }
         RELATIONAL_GREATER_EQUAL: {
-            ch = *++cursor;
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_GREATER_EQUAL");
             continue;
         }
         RELATIONAL_LESS_EQUAL: {
+            ++cursor;
             make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_LESS_EQUAL");
-            ch = *++cursor;
             continue;
         }
-        
-        // Delimiters
-        LPAREN: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "LPAREN");
-            continue;
-        }
-        RPAREN: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "RPAREN");
-            continue;
-        }
-        LBRACKET: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "LBRACKET");
-            continue;
-        }
-        RBRACKET: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "RBRACKET");
-            continue;
-        }
-        COLON: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "COLON");
-            continue;
-        }
-        COMMA: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "COMMA");
-            continue;
-        }
-        DOT: {
-            ch = *++cursor;
-            make_token(tokens, &tokenCount, tokenIndex, cursor, "DOT");
-            continue;
-        }
-
+        /********************[LITERALS]********************/
         INTEGER: {
             ch = *++cursor;
             if (isdigit(ch)) goto INTEGER;
@@ -251,6 +251,47 @@ int main() {
             }
             else goto INVALID;
         }
+        STRING: {
+            ch = *++cursor;
+            if (ch == '\"') {
+                ++cursor;
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "STRING");
+                continue;
+            }
+            if (ch == '\0') goto INVALID;
+            else goto STRING;
+        }
+        CHAR: {
+            cursor += 2;
+            ch = *cursor;
+            if (ch == '\'') {
+                ++cursor;
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "CHAR");
+                continue;
+            }
+            else goto INVALID;
+        }
+        /********************[COMMENTS]********************/
+        COMMENT: {
+            ch = *++cursor;
+            if (ch == '#') goto COMMENT_MULTI;
+            if (ch == '\n') {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "COMMENT");
+                continue;
+            }
+            goto COMMENT;
+        }
+        COMMENT_MULTI: {
+            ch = *++cursor;
+            if (ch == '#' && *(cursor + 1) == '#') {
+                cursor += 2;
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "COMMENT_MULTI");
+                continue;
+            }
+            if (ch == '\0') goto INVALID;
+            else goto COMMENT_MULTI;
+        }
+        /********************[IDENTIFIERS & KEYWORDS]********************/
         IDENTIFIER: {
             if (cursor - tokenIndex == 0) {
                 switch (ch) {
@@ -279,10 +320,8 @@ int main() {
             else goto INVALID;
         }
 
-        COMMENT:
-        COMMENT_MULTI:
-        STRING:
-        CHAR:
+
+
         
         // Keywords
         PREFIX_C:
@@ -294,12 +333,26 @@ int main() {
         PREFIX_CHARACT:
         PREFIX_CHARACTE:
         KEYWORD_CHARACTER:
+
+        PREFIX_CHO:
+        PREFIX_CHOI:
+        PREFIX_CHOIC:
+        KEYWORD_CHOICE:
         
         PREFIX_S:
         PREFIX_SC:
         PREFIX_SCE:
         PREFIX_SCEN:
         KEYWORD_SCENE:
+
+        PREFIX_SH:
+        PREFIX_SHO:
+        KEYWORD_SHOW:
+
+        PREFIX_ST:
+        PREFIX_STA:
+        PREFIX_STAR:
+        KEYWORD_START:
         
         PREFIX_T:
         PREFIX_TE:
@@ -309,6 +362,12 @@ int main() {
         PREFIX_TEMPLA:
         PREFIX_TEMPLAT:
         KEYWORD_TEMPLATE:
+
+        PREFIX_TI:
+        PREFIX_TIM:
+        PREFIX_TIME:
+        KEYWORD_TIMES:
+        
         
         PREFIX_D:
         PREFIX_DI:
@@ -327,10 +386,7 @@ int main() {
         PREFIX_NARRAT:
         KEYWORD_NARRATE:
         
-        PREFIX_CHO:
-        PREFIX_CHOI:
-        PREFIX_CHOIC:
-        KEYWORD_CHOICE:
+
         
         PREFIX_O:
         PREFIX_OP:
@@ -338,20 +394,33 @@ int main() {
         PREFIX_OPTI:
         PREFIX_OPTIO:
         KEYWORD_OPTION:
+
+        KEYWORD_OR:
         
+        PREFIX_NO:
+        KEYWORD_NOT:
+
         PREFIX_A:
         PREFIX_AS:
         KEYWORD_ASK:
+
+        PREFIX_AN:
+        KEYWORD_AND:
         
         PREFIX_I:
         KEYWORD_IF:
-        
+        KEYWORD_IS:
+
         PREFIX_E:
         PREFIX_EL:
         PREFIX_ELI:
         KEYWORD_ELIF:
+
         PREFIX_ELS:
         KEYWORD_ELSE:
+
+        PREFIX_EN:
+        KEYWORD_END:
         
         PREFIX_R:
         PREFIX_RE:
@@ -363,19 +432,7 @@ int main() {
         PREFIX_F:
         PREFIX_FO:
         KEYWORD_FOR:
-        
-        PREFIX_SH:
-        PREFIX_SHO:
-        KEYWORD_SHOW:
-        
-        PREFIX_ST:
-        PREFIX_STA:
-        PREFIX_STAR:
-        KEYWORD_START:
-        
-        PREFIX_EN:
-        KEYWORD_END:
-        
+
         PREFIX_B:
         PREFIX_BE:
         PREFIX_BEC:
@@ -384,29 +441,18 @@ int main() {
         PREFIX_BECOME:
         KEYWORD_BECOMES:
         
-        PREFIX_AN:
-        KEYWORD_AND:
-        
-        PREFIX_NO:
-        KEYWORD_NOT:
-        
-        PREFIX_OR:
-        KEYWORD_OR:
-        
-        PREFIX_IS:
-        KEYWORD_IS:
-        
         PREFIX_U:
         PREFIX_UN:
         PREFIX_UNT:
         PREFIX_UNTI:
         KEYWORD_UNTIL:
-        
-        PREFIX_TI:
-        PREFIX_TIM:
-        PREFIX_TIME:
-        KEYWORD_TIMES:
-        
+
+
+        PREFIX_FI:
+        PREFIX_FIX:
+        PREFIX_FIXE:
+        RES_KEY_FIXED:
+
         PREFIX_TR:
         PREFIX_TRU:
         RES_KEY_TRUE:
@@ -427,13 +473,6 @@ int main() {
         PREFIX_ERR:
         PREFIX_ERRO:
         RES_KEY_ERROR:
-        
-        PREFIX_FIX:
-        PREFIX_FIXE:
-        RES_KEY_FIXED:
-        
-        PREFIX_BR:
-
         
         INVALID: { break; }
 
