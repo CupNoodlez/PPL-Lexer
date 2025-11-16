@@ -1,27 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "tokens.h"
+#include <ctype.h>
 #include "helpers.h"
-
-typedef enum {
-    START,             // starting state (beginning of token recognition)
-    IN_IDENTIFIER,     // handles identifiers and keywords
-    IN_NUMBER,         // handles numeric literals
-    IN_OPERATOR,       // handles operators
-    IN_COMMENT,        // handles comments
-    IN_COMMENT_MULTI,  // handles multi-line comments
-    IN_STRING,         // handles string literals
-    IN_CHAR,           // handles character literals
-    IN_DELIM,          // handles delimiters
-    IN_BLANK,          // handles whitespace
-} LexerState;
-
-
-void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index);
-void emit_token(Token *tokens, int *token_count, const char *type, const char *lexeme);
-void handle_indentation(Token *tokens, int *token_count, int new_indent, int *indent_stack, int *stack_size);
-void flush_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index, int ch, FILE *fp, LexerState *state);
 
 int main() {
     char filename[256];
@@ -33,272 +14,432 @@ int main() {
         printf("Please enter a valid .st file format.\n");
         return 1;
     }
-
-    FILE *fp = fopen(filename, "r");
-    if (!fp) {
-        printf("Error opening file.\n");
+    unsigned int size;
+    char *inputBuffer = read_file(filename, &size);
+    if (!inputBuffer) {
+        printf("Error reading file.\n");
         return 1;
     }
     printf("File opened successfully!\n");
 
     Token tokens[1000];
-    char lexeme_buffer[100] = "";
-    int buffer_index = 0, token_count = 0;
-    int ch;
+    int tokenCount = 0;
+    char* cursor = inputBuffer;
+    char* tokenIndex;
 
-    // Indentation tracking
-    int indent_stack[100];  // Stack of indentation levels
-    int stack_size = 0;
-    indent_stack[stack_size++] = 0;  // Initialize with base level 0
-    int current_indent = 0;          // Current line's indentation
-    bool at_line_start = true;       // Are we at the start of a line?
+    while (*cursor) {
+        tokenIndex = cursor;
+        char ch = *cursor;
+        START: {
+            if (isspace(ch)) goto BLANK;
+            if (isdigit(ch)) goto INTEGER;
+            if (isalpha(ch)) goto IDENTIFIER;
 
-    LexerState state = START;
-
-    while ((ch = fgetc(fp)) != EOF) {
-        switch (state) {
-            // --- START: decide what to do with the next character ---
-            case START:
-                // Handle indentation at line start
-                if (at_line_start) {
-                    if (ch == ' ' || ch == '\t') {
-                        // Count indentation (each tab = 4 spaces for consistency)
-                        current_indent += (ch == '\t') ? 4 : 1;
-                        break;  // Stay in START, continue counting
-                    } else if (ch == '\n') {
-                        // Empty line - skip, stay at line start
-                        break;
-                    } else if (ch == '#') {
-                        // Comment line - ignore indentation
-                        current_indent = 0;
-                        at_line_start = false;
-                        // Continue to process '#' below
-                    } else {
-                        // Real content - handle indentation changes
-                        handle_indentation(tokens, &token_count, current_indent, indent_stack, &stack_size);
-                        at_line_start = false;
-                        current_indent = 0;
-                        // Continue to process character below
-                    }
-                }
-
-                // Normal token processing
-                if (ch == '\n') {
-                    // Emit NEWLINE token
-                    emit_token(tokens, &token_count, NEWLINE, "\\n");
-                    at_line_start = true;
-                    current_indent = 0;
-                }
-                else if (ch == ' ' || ch == '\t') {
-                    state = IN_BLANK;
-                }
-                else if (ch == '#') {
-                    state = IN_COMMENT;
-                    lexeme_buffer[buffer_index++] = ch;
-                    int next = fgetc(fp);
-                    if (next == '#') state = IN_COMMENT_MULTI;
-                    ungetc(next, fp);
-                }
-                else if (ch == '"') {
-                    state = IN_STRING;
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                else if (ch == '\'') {
-                    state = IN_CHAR;
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                else if (isOperator(ch)) {
-                    state = IN_OPERATOR;
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                else if (isDelimiter(ch)) {
-                    state = IN_DELIM;
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                else if (isDigit(ch)) {
-                    lexeme_buffer[buffer_index++] = ch;
-                    state = IN_NUMBER;
-                }
-                else if (isAlpha(ch)) {
-                    lexeme_buffer[buffer_index++] = ch;
-                    state = IN_IDENTIFIER;
-                }
-                else {
-                    lexeme_buffer[buffer_index++] = ch;
-                    state = IN_IDENTIFIER;
-                }
-                break;
-
-            // --- Whitespace ---
-            case IN_BLANK:
-                if (ch == '\n') {
-                    // Newline - transition back to START at line start
-                    emit_token(tokens, &token_count, NEWLINE, "\\n");
-                    at_line_start = true;
-                    current_indent = 0;
-                    state = START;
-                } else if (ch != ' ' && ch != '\t') {
-                    ungetc(ch, fp);
-                    state = START;
-                }
-                break;
-
-            // --- Identifier or keyword ---
-            case IN_IDENTIFIER:
-                if (isSeparator(ch)) {
-                    flush_token(tokens, &token_count, lexeme_buffer, &buffer_index, ch, fp, &state);
-                } else {
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                break;
-
-            // --- Number ---
-            case IN_NUMBER:
-                if (isDigit(ch) || ch == '.') {
-                    lexeme_buffer[buffer_index++] = ch;
-                } else if (isSeparator(ch)) {
-                    flush_token(tokens, &token_count, lexeme_buffer, &buffer_index, ch, fp, &state);
-                } else {
-                    lexeme_buffer[buffer_index++] = ch;
-                }
-                break;
-
-            // --- Delimiter ---
-            case IN_DELIM:
-                flush_token(tokens, &token_count, lexeme_buffer, &buffer_index, ch, fp, &state);
-                break;
-
-            // --- String literal ---
-            case IN_STRING:
-                lexeme_buffer[buffer_index++] = ch;
-                if (ch == '"') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = START;
-                }
-                break;
-
-            // --- Character literal ---
-            case IN_CHAR:
-                lexeme_buffer[buffer_index++] = ch;
-                if (ch == '\'') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = START;
-                }
-                break;
-
-            // --- Operators (e.g. ==, <=, >=, !=, //) ---
-            case IN_OPERATOR:
-                if (ch == '=') {
-                    lexeme_buffer[buffer_index++] = ch;
-                } else if (lexeme_buffer[0] == '/' && ch == '/') {
-                    lexeme_buffer[buffer_index++] = ch;
-                } else {
-                    ungetc(ch, fp);
-                }
-                finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                state = START;
-                break;
-
-            // --- Comments ---
-            case IN_COMMENT:
-                lexeme_buffer[buffer_index++] = ch;
-
-                if (ch == '\n') {
-                    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                    state = START;
-                }
-                break;
-
-            case IN_COMMENT_MULTI:
-                lexeme_buffer[buffer_index++] = ch;
-                if (ch == '#') {
-                    int next = fgetc(fp);
-                    if (next == '#') {
-                        lexeme_buffer[buffer_index++] = next;
-                        finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-                        state = START;
-                    } else {
-                        ungetc(next, fp);
-                    }
-                }
-                break;
+            switch (ch) {
+                case '.': goto DOT;
+                case ',': goto COMMA;
+                case ':': goto COLON;
+                case '(': goto LPAREN;
+                case ')': goto RPAREN;
+                case '[': goto LBRACKET;
+                case ']': goto RBRACKET;
+                case '=': goto ASSIGNMENT_ASSIGN;
+                case '+': goto ARITHMETIC_PLUS;
+                case '-': goto ARITHMETIC_MINUS;
+                case '*': goto ARITHMETIC_MULTIPLY;
+                case '/': goto ARITHMETIC_DIVIDE;
+                case '%': goto ARITHMETIC_MODULUS;
+                case '^': goto ARITHMETIC_EXPONENT;
+                case '>': goto RELATIONAL_GREATER;
+                case '<': goto RELATIONAL_LESS;
+                case '!': goto RELATIONAL_NOT;
+                case '\'': goto CHAR;
+                case '\"': goto STRING;
+                case '#': goto COMMENT;
+                default: goto INVALID;
+            }
         }
-    }
-    
-    // Handle leftover lexeme at EOF
-    finalize_token(tokens, &token_count, lexeme_buffer, &buffer_index);
-    
-    // Emit remaining DEDENT tokens to return to base level
-    while (stack_size > 1) {
-        emit_token(tokens, &token_count, DEDENT, "");
-        stack_size--;
+        BLANK: { 
+            ch = *++cursor;
+            if (isspace(ch)) goto BLANK; 
+            else continue; 
+        }
+
+        ARITHMETIC_PLUS: { 
+            ch = *++cursor;
+            if (ch == '=') goto ASSIGNMENT_PLUS_ASSIGN;
+            if (isSeparator(ch)) {  
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_PLUS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_MINUS: { 
+            ch = *++cursor;
+            if (ch == '=') goto ASSIGNMENT_MINUS_ASSIGN;
+            if (isSeparator(ch)) {  
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_MINUS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_MULTIPLY: { 
+            ch = *++cursor;
+            if (ch == '=') goto ASSIGNMENT_MULT_ASSIGN;
+            if (isSeparator(ch)) {  
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_MULTIPLY");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_DIVIDE: { 
+            ch = *++cursor;
+            if (ch == '/') goto ARITHMETIC_FLOOR_DIVIDE;
+            if (ch == '=') goto ASSIGNMENT_DIV_ASSIGN;
+            if (isSeparator(ch)) {  
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_DIVIDE");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_FLOOR_DIVIDE: { 
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_FLOOR_DIVIDE");
+            continue;
+        }
+        ARITHMETIC_MODULUS: { 
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_MODULUS");
+            continue;
+        }
+        ARITHMETIC_EXPONENT: { 
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ARITHMETIC_EXPONENT");
+            continue;
+        }
+        ASSIGNMENT_ASSIGN: {
+            ch = *++cursor;
+            if (ch == '=') goto RELATIONAL_EQUAL_EQUAL;
+            if (isSeparator(ch)) {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_ASSIGN");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ASSIGNMENT_PLUS_ASSIGN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_PLUS_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MINUS_ASSIGN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MINUS_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MULT_ASSIGN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MULT_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_DIV_ASSIGN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_DIV_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MOD_ASSIGN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "ASSIGNMENT_MOD_ASSIGN");
+            continue;
+        }
+        RELATIONAL_LESS: {
+            ch = *++cursor;
+            if (ch == '=') goto RELATIONAL_LESS_EQUAL;
+            if (isSeparator(ch)) {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_LESS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        RELATIONAL_GREATER: {
+            ch = *++cursor;
+            if (ch == '=') goto RELATIONAL_GREATER_EQUAL;
+            if (isSeparator(ch)) {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_GREATER");
+                continue;
+            }
+            else goto INVALID;
+        }
+        RELATIONAL_NOT: {
+            ch = *++cursor;
+            if (ch == '=') goto RELATIONAL_NOT_EQUAL;
+            else goto INVALID;
+        }
+        RELATIONAL_NOT_EQUAL: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_NOT_EQUAL");
+            continue;
+        }
+        RELATIONAL_EQUAL_EQUAL: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_EQUAL_EQUAL");
+            continue;
+        }
+        RELATIONAL_GREATER_EQUAL: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_GREATER_EQUAL");
+            continue;
+        }
+        RELATIONAL_LESS_EQUAL: {
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RELATIONAL_LESS_EQUAL");
+            ch = *++cursor;
+            continue;
+        }
+        
+        // Delimiters
+        LPAREN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "LPAREN");
+            continue;
+        }
+        RPAREN: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RPAREN");
+            continue;
+        }
+        LBRACKET: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "LBRACKET");
+            continue;
+        }
+        RBRACKET: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "RBRACKET");
+            continue;
+        }
+        COLON: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "COLON");
+            continue;
+        }
+        COMMA: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "COMMA");
+            continue;
+        }
+        DOT: {
+            ch = *++cursor;
+            make_token(tokens, &tokenCount, tokenIndex, cursor, "DOT");
+            continue;
+        }
+
+        INTEGER: {
+            ch = *++cursor;
+            if (isdigit(ch)) goto INTEGER;
+            if (ch == '.')  goto FLOAT; 
+            if (isSeparator(ch)) {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "INTEGER");
+                continue;
+            }
+            else goto INVALID;
+        }
+        FLOAT: {
+            ch = *++cursor;
+            if (isdigit(ch)) goto FLOAT;
+            if (isSeparator(ch)) {
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "FLOAT");
+                continue;
+            }
+            else goto INVALID;
+        }
+        IDENTIFIER: {
+            if (cursor - tokenIndex == 0) {
+                switch (ch) {
+                    case 'a': goto PREFIX_A;
+                    case 'b': goto PREFIX_B;
+                    case 'c': goto PREFIX_C;
+                    case 'd': goto PREFIX_D;
+                    case 'e': goto PREFIX_E;
+                    case 'f': goto PREFIX_F;
+                    case 'i': goto PREFIX_I;
+                    case 'n': goto PREFIX_N;
+                    case 'o': goto PREFIX_O;
+                    case 'r': goto PREFIX_R;
+                    case 's': goto PREFIX_S;
+                    case 't': goto PREFIX_T;
+                    case 'u': goto PREFIX_U;
+                    default: break;
+                }
+            }
+            ch = *++cursor;
+            if (isalnum(ch) || ch == '_') goto IDENTIFIER;
+            if (isSeparator(ch)) { 
+                make_token(tokens, &tokenCount, tokenIndex, cursor, "IDENTIFIER");
+                continue;
+            }
+            else goto INVALID;
+        }
+
+        COMMENT:
+        COMMENT_MULTI:
+        STRING:
+        CHAR:
+        
+        // Keywords
+        PREFIX_C:
+        PREFIX_CH:
+        PREFIX_CHA:
+        PREFIX_CHAR:
+        PREFIX_CHARA:
+        PREFIX_CHARAC:
+        PREFIX_CHARACT:
+        PREFIX_CHARACTE:
+        KEYWORD_CHARACTER:
+        
+        PREFIX_S:
+        PREFIX_SC:
+        PREFIX_SCE:
+        PREFIX_SCEN:
+        KEYWORD_SCENE:
+        
+        PREFIX_T:
+        PREFIX_TE:
+        PREFIX_TEM:
+        PREFIX_TEMP:
+        PREFIX_TEMPL:
+        PREFIX_TEMPLA:
+        PREFIX_TEMPLAT:
+        KEYWORD_TEMPLATE:
+        
+        PREFIX_D:
+        PREFIX_DI:
+        PREFIX_DIA:
+        PREFIX_DIAL:
+        PREFIX_DIALO:
+        PREFIX_DIALOG:
+        PREFIX_DIALOGU:
+        KEYWORD_DIALOGUE:
+        
+        PREFIX_N:
+        PREFIX_NA:
+        PREFIX_NAR:
+        PREFIX_NARR:
+        PREFIX_NARRA:
+        PREFIX_NARRAT:
+        KEYWORD_NARRATE:
+        
+        PREFIX_CHO:
+        PREFIX_CHOI:
+        PREFIX_CHOIC:
+        KEYWORD_CHOICE:
+        
+        PREFIX_O:
+        PREFIX_OP:
+        PREFIX_OPT:
+        PREFIX_OPTI:
+        PREFIX_OPTIO:
+        KEYWORD_OPTION:
+        
+        PREFIX_A:
+        PREFIX_AS:
+        KEYWORD_ASK:
+        
+        PREFIX_I:
+        KEYWORD_IF:
+        
+        PREFIX_E:
+        PREFIX_EL:
+        PREFIX_ELI:
+        KEYWORD_ELIF:
+        PREFIX_ELS:
+        KEYWORD_ELSE:
+        
+        PREFIX_R:
+        PREFIX_RE:
+        PREFIX_REP:
+        PREFIX_REPE:
+        PREFIX_REPEA:
+        KEYWORD_REPEAT:
+        
+        PREFIX_F:
+        PREFIX_FO:
+        KEYWORD_FOR:
+        
+        PREFIX_SH:
+        PREFIX_SHO:
+        KEYWORD_SHOW:
+        
+        PREFIX_ST:
+        PREFIX_STA:
+        PREFIX_STAR:
+        KEYWORD_START:
+        
+        PREFIX_EN:
+        KEYWORD_END:
+        
+        PREFIX_B:
+        PREFIX_BE:
+        PREFIX_BEC:
+        PREFIX_BECO:
+        PREFIX_BECOM:
+        PREFIX_BECOME:
+        KEYWORD_BECOMES:
+        
+        PREFIX_AN:
+        KEYWORD_AND:
+        
+        PREFIX_NO:
+        KEYWORD_NOT:
+        
+        PREFIX_OR:
+        KEYWORD_OR:
+        
+        PREFIX_IS:
+        KEYWORD_IS:
+        
+        PREFIX_U:
+        PREFIX_UN:
+        PREFIX_UNT:
+        PREFIX_UNTI:
+        KEYWORD_UNTIL:
+        
+        PREFIX_TI:
+        PREFIX_TIM:
+        PREFIX_TIME:
+        KEYWORD_TIMES:
+        
+        PREFIX_TR:
+        PREFIX_TRU:
+        RES_KEY_TRUE:
+        
+        PREFIX_FA:
+        PREFIX_FAL:
+        PREFIX_FALS:
+        RES_KEY_FALSE:
+        
+        PREFIX_RET:
+        PREFIX_RETU:
+        PREFIX_RETUR:
+        RES_KEY_RETURN:
+        
+        RES_KEY_IN:
+        
+        PREFIX_ER:
+        PREFIX_ERR:
+        PREFIX_ERRO:
+        RES_KEY_ERROR:
+        
+        PREFIX_FIX:
+        PREFIX_FIXE:
+        RES_KEY_FIXED:
+        
+        PREFIX_BR:
+
+        
+        INVALID: { break; }
+
     }
 
     outputTokens(tokens);
-    fclose(fp);
+    free(inputBuffer);
     return 0;
-}
-
-
-void emit_token(Token *tokens, int *token_count, const char *type, const char *lexeme) {
-    str_copy(tokens[*token_count].type, type);
-    str_copy(tokens[*token_count].lexeme, lexeme);
-    (*token_count)++;
-}
-
-void handle_indentation(Token *tokens, int *token_count, int new_indent, int *indent_stack, int *stack_size) {
-    int current_level = indent_stack[*stack_size - 1];
-    
-    if (new_indent > current_level) {
-        // Increased indentation - emit INDENT
-        indent_stack[(*stack_size)++] = new_indent;
-        emit_token(tokens, token_count, INDENT, "");
-    } else if (new_indent < current_level) {
-        // Decreased indentation - emit DEDENT(s)
-        while (*stack_size > 1 && indent_stack[*stack_size - 1] > new_indent) {
-            (*stack_size)--;
-            emit_token(tokens, token_count, DEDENT, "");
-        }
-        
-        // Check for indentation error (dedent to non-existent level)
-        if (*stack_size > 0 && indent_stack[*stack_size - 1] != new_indent) {
-            // Indentation error - dedented to a level that wasn't used before
-            // For now, we'll just accept it and add it to the stack
-            indent_stack[(*stack_size)++] = new_indent;
-        }
-    }
-    // If new_indent == current_level, no token needed
-}
-
-void finalize_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index) {
-    if (*buffer_index == 0) return;
-    lexeme_buffer[*buffer_index] = '\0';
-
-    // Replace newline and carriage return characters with a space so the comment
-    // text doesn't break table lines when printed. Then trim trailing spaces.
-    for (int i = 0; lexeme_buffer[i] != '\0'; ++i) {
-        if (lexeme_buffer[i] == '\n' || lexeme_buffer[i] == '\r') {
-            lexeme_buffer[i] = ' ';
-        }
-    }
-    // Trim trailing spaces/tabs
-    int len = *buffer_index;
-    while (len > 0 && (lexeme_buffer[len - 1] == ' ' || lexeme_buffer[len - 1] == '\t')) {
-        lexeme_buffer[len - 1] = '\0';
-        len--;
-    }
-    *buffer_index = len;
-
-    str_copy(tokens[*token_count].type, getTokenType(lexeme_buffer));
-    str_copy(tokens[*token_count].lexeme, lexeme_buffer);
-    (*token_count)++;
-
-    *buffer_index = 0;
-    lexeme_buffer[0] = '\0';
-}
-
-void flush_token(Token *tokens, int *token_count, char *lexeme_buffer, int *buffer_index, int ch, FILE *fp, LexerState *state) {
-    finalize_token(tokens, token_count, lexeme_buffer, buffer_index);
-    ungetc(ch, fp);  // push back current character
-    *state = START;
 }

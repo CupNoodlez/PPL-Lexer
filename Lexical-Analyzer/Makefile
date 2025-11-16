@@ -6,9 +6,9 @@ SRCDIR = src
 OBJDIR = obj
 
 # Source files
-SOURCES = Lexer.c tokens.c helpers.c
+SOURCES = Lexer.c helpers.c
 OBJECTS = $(SOURCES:%.c=$(OBJDIR)/%.o)
-HEADERS = $(SRCDIR)/tokens.h $(SRCDIR)/helpers.h
+HEADERS = $(SRCDIR)/helpers.h
 
 # Default target
 all: $(TARGET)

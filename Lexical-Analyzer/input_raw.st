@@ -1,47 +1,33 @@
-# identifiers
 Hero villain
 
-# assignment operators
++ = - * / % // /=
+
 = += -= *= /= %=
 
-# arithmetic operators
 + - * / // % ^
 
-# relational operators
 == != > < >= <=
 
-# logical operators (keywords)
-and or not is
+1234 999999 
 
-# keywords
-character scene template dialogue narrate choice option ask if elif else repeat for show start end becomes until times
-
-# reserved words 
-true false return in error fixed break continue pass with
-
-# noise word
-the a an as then of to
-
-# Integer Literal
-1234 999999 99f 99()
-
-# Float Literal
 3.14 2.718281828459045
 
-# String Literal
-"Hello, world!" "infinity" "String with spaces" ""
-
-# character literals #
-'i' 'a' 'Z'
-
-# comments
-# this is a single line comment
-## this is multi-line 
-comment ##
-
-# delimiters
 ( ) [ ] : , .
 
-# invalids
-143variable 'Aa' 9name my$var 123.456.789 "unterminated string
 
+and or not is
+
+character scene template dialogue narrate choice option ask if elif else repeat for show start end becomes until times
+
+true false return in error fixed break continue pass with
+
+the a an as then of to
+
+
+
+"Hello, world!" "infinity" "String with spaces" ""
+
+'i' 'a' 'Z'
+
+
+143variable 'Aa' 9name my$var 123.456.789 "unterminated string
