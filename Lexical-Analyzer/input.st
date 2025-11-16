@@ -23,7 +23,7 @@ true false return in error fixed break continue pass with
 the a an as then of to
 
 # Integer Literal
-1234 999999 99f 99()
+1234 999999
 
 # Float Literal
 3.14 2.718281828459045
