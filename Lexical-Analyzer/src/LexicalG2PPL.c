@@ -2,7 +2,29 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <string.h>
 #include "helpers.h"
+
+typedef struct {
+    char type[26];        
+    char lexeme[100];      
+} Token;
+
+typedef struct {
+    int data[100];
+    int topIndex;
+} Stack;
+
+void push(Stack *stack, int value);
+int pop(Stack *stack);
+int peek(Stack *stack);
+bool isDelimiter(char c);
+bool isOperator(char c);
+bool isSeparator(char c);
+char *read_file(const char *filename, unsigned int *out_size);
+void emitToken(Token *tokens, int *tokenCount, const char *start, const char *end, const char *type); 
+void outputTokens(Token* tokens);
+void bufferChar(char *buffer, int *pos, char ch);
 
 int main() {
     char filename[256];
@@ -10,10 +32,15 @@ int main() {
     // user inputs filename
     printf("Enter filename: ");
     scanf("%255s", filename);  
-    if (!read_file_ext(filename)) {
+
+    // check file extension
+    int len = strlen(filename);
+    if (len < 3 || strcmp(filename + len - 3, ".st") != 0) {
         printf("Please enter a valid .st file format.\n");
         return 1;
     }
+
+    // read file content
     unsigned int size;
     char *inputBuffer = read_file(filename, &size);
     if (!inputBuffer) {
@@ -37,6 +64,7 @@ int main() {
         /********************[START STATE]********************/
         lexemeIndex = cursor;
         if (*cursor == '\n')  goto NEWLINE;
+        if (*cursor == '\r')  { cursor++; continue; }
         if (isspace(*cursor)) goto BLANK;
         if (isdigit(*cursor)) goto INTEGER;
         if (isalpha(*cursor)) goto IDENTIFIER;
@@ -70,14 +98,14 @@ int main() {
             else continue; 
         }
         NEWLINE: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "NEWLINE");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "NEWLINE");
             beginningSpaces = 0;
             
             if (*cursor == '\n') continue;
             if (*cursor == '\0') {
                 while (peek(&indentationStack) > 0) {
                     pop(&indentationStack);
-                    make_token(tokens, &tokenCount, lexemeIndex, cursor, "DEDENT");
+                    emitToken(tokens, &tokenCount, lexemeIndex, cursor, "DEDENT");
                 }
                 continue;
             }
@@ -87,32 +115,32 @@ int main() {
             }
             if (beginningSpaces > peek(&indentationStack)) {
                 push(&indentationStack, beginningSpaces);
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "INDENT");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "INDENT");
                 continue;
             } 
             else if (beginningSpaces < peek(&indentationStack)) {
                 while (beginningSpaces != peek(&indentationStack)) {
                     int element = pop(&indentationStack);
                     if (element == -1) goto INVALID;
-                    make_token(tokens, &tokenCount, lexemeIndex, cursor, "DEDENT");
+                    emitToken(tokens, &tokenCount, lexemeIndex, cursor, "DEDENT");
                 }
                 continue;
             }
             continue;
         }
         /********************[DELIMITERS]********************/
-        LPAREN: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "LPAREN"); continue; }
-        RPAREN: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RPAREN"); continue; }
-        LBRACKET: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "LBRACKET"); continue; }
-        RBRACKET: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RBRACKET"); continue; }
-        COLON: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "COLON"); continue; }
-        COMMA: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "COMMA"); continue; }
-        DOT: { make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "DOT"); continue; }
+        LPAREN: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "LPAREN"); continue; }
+        RPAREN: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RPAREN"); continue; }
+        LBRACKET: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "LBRACKET"); continue; }
+        RBRACKET: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RBRACKET"); continue; }
+        COLON: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "COLON"); continue; }
+        COMMA: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "COMMA"); continue; }
+        DOT: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "DOT"); continue; }
         /********************[OPERATORS]********************/
         ARITHMETIC_PLUS: { 
             if (*++cursor == '=') goto ASSIGNMENT_PLUS_ASSIGN;
             if (isSeparator(*cursor)) {  
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_PLUS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_PLUS");
                 continue;
             }
             else goto INVALID;
@@ -120,7 +148,7 @@ int main() {
         ARITHMETIC_MINUS: { 
             if (*++cursor == '=') goto ASSIGNMENT_MINUS_ASSIGN;
             if (isSeparator(*cursor)) {  
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MINUS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MINUS");
                 continue;
             }
             else goto INVALID;
@@ -128,7 +156,7 @@ int main() {
         ARITHMETIC_MULTIPLY: { 
             if (*++cursor == '=') goto ASSIGNMENT_MULT_ASSIGN;
             if (isSeparator(*cursor)) {  
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MULTIPLY");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MULTIPLY");
                 continue;
             }
             else goto INVALID;
@@ -137,7 +165,7 @@ int main() {
             if (*++cursor == '/') goto ARITHMETIC_FLOOR_DIVIDE;
             if (*cursor == '=') goto ASSIGNMENT_DIV_ASSIGN;
             if (isSeparator(*cursor)) {  
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_DIVIDE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_DIVIDE");
                 continue;
             }
             else goto INVALID;
@@ -145,7 +173,7 @@ int main() {
         ARITHMETIC_MODULUS: { 
             if (*++cursor == '=') goto ASSIGNMENT_MOD_ASSIGN;
             if (isSeparator(*cursor)) {  
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MODULUS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ARITHMETIC_MODULUS");
                 continue;
             }
             else goto INVALID;
@@ -153,44 +181,44 @@ int main() {
         ASSIGNMENT_ASSIGN: {
             if (*++cursor == '=') goto RELATIONAL_EQUAL_EQUAL;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "ASSIGNMENT_ASSIGN");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "ASSIGNMENT_ASSIGN");
                 continue;
             }
             else goto INVALID;
         }
         ARITHMETIC_FLOOR_DIVIDE: { 
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ARITHMETIC_FLOOR_DIVIDE");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ARITHMETIC_FLOOR_DIVIDE");
             continue;
         }
         ARITHMETIC_EXPONENT: { 
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ARITHMETIC_EXPONENT");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ARITHMETIC_EXPONENT");
             continue;
         }
 
         ASSIGNMENT_PLUS_ASSIGN: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_PLUS_ASSIGN");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_PLUS_ASSIGN");
             continue;
         }
         ASSIGNMENT_MINUS_ASSIGN: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MINUS_ASSIGN");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MINUS_ASSIGN");
             continue;
         }
         ASSIGNMENT_MULT_ASSIGN: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MULT_ASSIGN");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MULT_ASSIGN");
             continue;
         }
         ASSIGNMENT_DIV_ASSIGN: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_DIV_ASSIGN");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_DIV_ASSIGN");
             continue;
         }
         ASSIGNMENT_MOD_ASSIGN: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MOD_ASSIGN");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "ASSIGNMENT_MOD_ASSIGN");
             continue;
         }
         RELATIONAL_LESS: {
             if (*++cursor == '=') goto RELATIONAL_LESS_EQUAL;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RELATIONAL_LESS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RELATIONAL_LESS");
                 continue;
             }
             else goto INVALID;
@@ -198,7 +226,7 @@ int main() {
         RELATIONAL_GREATER: {
             if (*++cursor == '=') goto RELATIONAL_GREATER_EQUAL;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RELATIONAL_GREATER");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RELATIONAL_GREATER");
                 continue;
             }
             else goto INVALID;
@@ -208,19 +236,19 @@ int main() {
             else goto INVALID;
         }
         RELATIONAL_NOT_EQUAL: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_NOT_EQUAL");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_NOT_EQUAL");
             continue;
         }
         RELATIONAL_EQUAL_EQUAL: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_EQUAL_EQUAL");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_EQUAL_EQUAL");
             continue;
         }
         RELATIONAL_GREATER_EQUAL: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_GREATER_EQUAL");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_GREATER_EQUAL");
             continue;
         }
         RELATIONAL_LESS_EQUAL: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_LESS_EQUAL");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "RELATIONAL_LESS_EQUAL");
             continue;
         }
         /********************[LITERALS]********************/
@@ -228,7 +256,7 @@ int main() {
             if (isdigit(*++cursor)) goto INTEGER;
             if (*cursor == '.')  goto FLOAT; 
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "INTEGER");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "INTEGER");
                 continue;
             }
             else goto INVALID;
@@ -236,7 +264,7 @@ int main() {
         FLOAT: {
             if (isdigit(*++cursor)) goto FLOAT;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "FLOAT");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "FLOAT");
                 continue;
             }
             else goto INVALID;
@@ -247,7 +275,7 @@ int main() {
             else goto STRING;
         }
         STRING_END: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "STRING");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "STRING");
             continue;
         }
         CHAR: {
@@ -259,7 +287,7 @@ int main() {
             else goto INVALID;
         }
         CHAR_END: {
-            make_token(tokens, &tokenCount, lexemeIndex, ++cursor, "CHAR");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "CHAR");
             continue;
         }
         /********************[COMMENTS]********************/
@@ -269,7 +297,7 @@ int main() {
             goto COMMENT;
         }
         COMMENT_SINGLE_END: {
-            make_token(tokens, &tokenCount, lexemeIndex, cursor, "COMMENT");
+            emitToken(tokens, &tokenCount, lexemeIndex, cursor, "COMMENT");
             continue;
         }
         COMMENT_MULTI: {
@@ -282,7 +310,7 @@ int main() {
             goto COMMENT_MULTI;
         }
         COMMENT_MULTI_END: {
-            make_token(tokens, &tokenCount, lexemeIndex, cursor, "COMMENT_MULTI");
+            emitToken(tokens, &tokenCount, lexemeIndex, cursor, "COMMENT_MULTI");
             continue;
         }
         /********************[IDENTIFIERS & KEYWORDS]********************/
@@ -309,7 +337,7 @@ int main() {
             }
             if (isalnum(*++cursor) || *cursor == '_') goto IDENTIFIER;
             if (isSeparator(*cursor)) { 
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "IDENTIFIER");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "IDENTIFIER");
                 continue;
             }
             else goto INVALID;
@@ -318,7 +346,7 @@ int main() {
             if (*++cursor == 's') goto NOISE_AS;
             if (*cursor == 'n') goto NOISE_AN;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_A");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_A");
                 continue;
             }
             goto IDENTIFIER;
@@ -326,14 +354,14 @@ int main() {
         NOISE_AS: {
             if (*++cursor == 'k') goto KEYWORD_ASK;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_AS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_AS");
                 continue;
             }
             goto IDENTIFIER;
         }
         KEYWORD_ASK: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ASK");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ASK");
                 continue;
             }
             goto IDENTIFIER;
@@ -341,14 +369,14 @@ int main() {
         NOISE_AN: {
             if (*++cursor == 'd') goto KEYWORD_AND;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_AN");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_AN");
                 continue;
             }
             goto IDENTIFIER;
         }
         KEYWORD_AND: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_AND");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_AND");
                 continue;
             }
             goto IDENTIFIER;
@@ -380,7 +408,7 @@ int main() {
         }
         KEYWORD_BECOMES: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_BECOMES");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_BECOMES");
                 continue;
             }
             goto IDENTIFIER;
@@ -399,7 +427,7 @@ int main() {
         }
         RES_KEY_BREAK: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_BREAK");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_BREAK");
                 continue;
             }
             goto IDENTIFIER;
@@ -435,7 +463,7 @@ int main() {
         }
         RES_KEY_CONTINUE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_CONTINUE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_CONTINUE");
                 continue;
             }
             goto IDENTIFIER;
@@ -471,7 +499,7 @@ int main() {
         }
         KEYWORD_CHARACTER: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_CHARACTER");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_CHARACTER");
                 continue;
             }
             goto IDENTIFIER;
@@ -490,7 +518,7 @@ int main() {
         }
         KEYWORD_CHOICE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_CHOICE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_CHOICE");
                 continue;
             }
             goto IDENTIFIER;
@@ -525,7 +553,7 @@ int main() {
         }
         KEYWORD_DIALOGUE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_DIALOGUE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_DIALOGUE");
                 continue;
             }
             goto IDENTIFIER;
@@ -547,7 +575,7 @@ int main() {
         }
         KEYWORD_ELIF: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ELIF");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ELIF");
                 continue;
             }
             goto IDENTIFIER;
@@ -558,7 +586,7 @@ int main() {
         }
         KEYWORD_ELSE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ELSE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_ELSE");
                 continue;
             }
             goto IDENTIFIER;
@@ -569,7 +597,7 @@ int main() {
         }
         KEYWORD_END: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_END");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_END");
                 continue;
             }
             goto IDENTIFIER;
@@ -588,7 +616,7 @@ int main() {
         }
         RES_KEY_ERROR: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_ERROR");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_ERROR");
                 continue;
             }
             goto IDENTIFIER;
@@ -613,7 +641,7 @@ int main() {
         }
         RES_KEY_FALSE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_FALSE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_FALSE");
                 continue;
             }
             goto IDENTIFIER;
@@ -624,7 +652,7 @@ int main() {
         }
         KEYWORD_FOR: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_FOR");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_FOR");
                 continue;
             }
             goto IDENTIFIER;
@@ -643,7 +671,7 @@ int main() {
         }
         RES_KEY_FIXED: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_FIXED");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_FIXED");
                 continue;
             }
             goto IDENTIFIER;
@@ -656,21 +684,21 @@ int main() {
         }
         KEYWORD_IF: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_IF");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_IF");
                 continue;
             }
             goto IDENTIFIER;
         }
         RES_KEY_IN: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_IN");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_IN");
                 continue;
             }
             goto IDENTIFIER;
         }
         KEYWORD_IS: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_IS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_IS");
                 continue;
             }
             goto IDENTIFIER;
@@ -702,7 +730,7 @@ int main() {
         }
         KEYWORD_NARRATE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_NARRATE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_NARRATE");
                 continue;
             }
             goto IDENTIFIER;
@@ -713,7 +741,7 @@ int main() {
         }
         KEYWORD_NOT: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_NOT");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_NOT");
                 continue;
             }
             goto IDENTIFIER;
@@ -742,21 +770,21 @@ int main() {
         }
         KEYWORD_OPTION: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_OPTION");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_OPTION");
                 continue;
             }
             goto IDENTIFIER;
         }
         KEYWORD_OR: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_OR");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_OR");
                 continue;
             }
             goto IDENTIFIER;
         }
         NOISE_OF: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_OF");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_OF");
                 continue;
             }
             goto IDENTIFIER;
@@ -775,7 +803,7 @@ int main() {
         }
         RES_KEY_PASS: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_PASS");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_PASS");
                 continue;
             }
             goto IDENTIFIER;
@@ -803,7 +831,7 @@ int main() {
         }
         KEYWORD_REPEAT: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_REPEAT");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_REPEAT");
                 continue;
             }
             goto IDENTIFIER;
@@ -822,7 +850,7 @@ int main() {
         }
         RES_KEY_RETURN: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_RETURN");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_RETURN");
                 continue;
             }
             goto IDENTIFIER;
@@ -847,7 +875,7 @@ int main() {
         }
         KEYWORD_SCENE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_SCENE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_SCENE");
                 continue;
             }
             goto IDENTIFIER;
@@ -862,7 +890,7 @@ int main() {
         }
         KEYWORD_SHOW: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_SHOW");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_SHOW");
                 continue;
             }
             goto IDENTIFIER;
@@ -881,7 +909,7 @@ int main() {
         }
         KEYWORD_START: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_START");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_START");
                 continue;
             }
             goto IDENTIFIER;
@@ -921,7 +949,7 @@ int main() {
         }
         KEYWORD_TEMPLATE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_TEMPLATE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_TEMPLATE");
                 continue;
             }
             goto IDENTIFIER;
@@ -940,7 +968,7 @@ int main() {
         }
         KEYWORD_TIMES: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_TIMES");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_TIMES");
                 continue;
             }
             goto IDENTIFIER;
@@ -952,21 +980,21 @@ int main() {
         NOISE_THE: {
             if (*++cursor == 'n') goto NOISE_THEN;
             if (isSeparator(*cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_THE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_THE");
                 continue;
             }
             goto IDENTIFIER;
         }
         NOISE_THEN: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_THEN");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_THEN");
                 continue;
             }
             goto IDENTIFIER;
         }
         NOISE_TO: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_TO");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_TO");
                 continue;
             }
             goto IDENTIFIER;
@@ -981,7 +1009,7 @@ int main() {
         }
         RES_KEY_TRUE: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_TRUE");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_TRUE");
                 continue;
             }
             goto IDENTIFIER;
@@ -1004,7 +1032,7 @@ int main() {
         }
         KEYWORD_UNTIL: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_UNTIL");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_UNTIL");
                 continue;
             }
             goto IDENTIFIER;
@@ -1023,7 +1051,7 @@ int main() {
         }
         RES_KEY_WITH: {
             if (isSeparator(*++cursor)) {
-                make_token(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_WITH");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "RES_KEY_WITH");
                 continue;
             }
             goto IDENTIFIER;
@@ -1033,4 +1061,130 @@ int main() {
     outputTokens(tokens);
     free(inputBuffer);
     return 0;
+}
+
+bool isDelimiter(char c) {
+    return c == ',' || c == ':' || c == '.' || c == '(' ||
+           c == ')' || c == '[' || c == ']';
+}
+
+bool isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' ||
+           c == '=' || c == '!' || c == '<' || c == '>';
+}
+
+bool isSeparator(char c) {
+    return isspace(c) || isDelimiter(c) || isOperator(c);
+}
+
+void push(Stack *stack, int value) {
+    if (stack->topIndex < 99) {
+        stack->data[++(stack->topIndex)] = value;
+    }
+}
+int pop(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[(stack->topIndex)--];
+    }
+    return -1;
+}
+int peek(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[stack->topIndex];
+    }
+    return -1;
+}
+
+int read_file_ext(const char *filename){
+
+    //finds the start of the file extension
+    int dot_pos = -1;
+    for (int i = 0; filename[i] != '\0'; ++i)
+        if(filename[i] == '.')
+            dot_pos = i;
+
+    if (dot_pos < 0) return 0;  
+
+    //checks if the file extension is in .st format
+    const char *ext = filename + dot_pos + 1;
+    if (ext[0] == 's' && ext[1] == 't' && ext[2] == '\0')
+        return 1;
+    return 0;
+}
+
+char *read_file(const char *filename, unsigned int *out_size) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) return NULL;
+
+    fseek(fp, 0, SEEK_END);
+    long size = ftell(fp);
+    rewind(fp);
+
+    char *buffer = malloc(size + 1);
+    if (!buffer) return NULL;
+
+    fread(buffer, 1, size, fp);
+    buffer[size] = '\0';   // null-terminate for string logic
+    fclose(fp);
+
+    if (out_size) *out_size = size;
+    return buffer;
+}
+
+void emitToken(Token *tokens, int *tokenCount,
+                const char *start, const char *end,
+                const char *type)
+{
+    int length = end - start;
+
+    // copy lexeme substring
+    memcpy(tokens[*tokenCount].lexeme, start, length);
+    tokens[*tokenCount].lexeme[length] = '\0';
+
+    // remove newlines for pretty print
+    for (int i = 0; tokens[*tokenCount].lexeme[i] != '\0'; ++i)
+        if (tokens[*tokenCount].lexeme[i] == '\n' || tokens[*tokenCount].lexeme[i] == '\r') 
+            tokens[*tokenCount].lexeme[i] = ' ';
+
+    // copy token type
+    strcpy(tokens[*tokenCount].type, type);
+
+    (*tokenCount)++;
+}
+
+void outputTokens(Token* tokens) {
+    FILE *outputFile = fopen("SymbolTable.txt", "w");
+    if (!outputFile) {
+        printf("Error: Could not create output file.\n");
+        return;
+    }
+    FILE *outputTokenFile = fopen("../Tokens.txt", "w");
+    if (!outputTokenFile) {
+        printf("Error: Could not create output token file.\n");
+        return;
+    }
+
+    // File table header
+    fprintf(outputFile, "TOKEN TABLE\n");
+    fprintf(outputFile, "===========\n\n");
+    fprintf(outputFile, "%-4s | %-26s | %-45s\n", "No.", "Type", "Lexeme");
+    fprintf(outputFile, "-----+-------------------------+-----------------------------------------------\n");
+
+
+    // Count tokens and print them
+    int count = 0;
+    while (tokens[count].type[0] != '\0') {
+        count++;
+        fprintf(outputFile, "%-4d | %-26s | %-45s\n", count, tokens[count-1].type, tokens[count-1].lexeme);
+        fprintf(outputTokenFile, "%s\n", tokens[count-1].type);
+    }
+
+    printf("\nTotal tokens: %d\n", count);
+    printf("Output saved to: Lexical-Analyzer/SymbolTable.txt\n\n");
+    printf("Token types saved to: Tokens.txt\n");
+
+    // Print to file
+    fprintf(outputFile, "\nTotal tokens: %d\n", count);
+
+    fclose(outputFile);
 }
