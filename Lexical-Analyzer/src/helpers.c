@@ -18,6 +18,24 @@ bool isSeparator(char c) {
     return isspace(c) || isDelimiter(c) || isOperator(c);
 }
 
+void push(Stack *stack, int value) {
+    if (stack->topIndex < 99) {
+        stack->data[++(stack->topIndex)] = value;
+    }
+}
+int pop(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[(stack->topIndex)--];
+    }
+    return -1;
+}
+int peek(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[stack->topIndex];
+    }
+    return -1;
+}
+
 int read_file_ext(const char *filename){
 
     //finds the start of the file extension

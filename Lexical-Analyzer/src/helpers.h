@@ -9,6 +9,14 @@ typedef struct {
     char lexeme[100];      
 } Token;
 
+typedef struct {
+    int data[100];
+    int topIndex;
+} Stack;
+
+void push(Stack *stack, int value);
+int pop(Stack *stack);
+int peek(Stack *stack);
 bool isDelimiter(char c);
 bool isOperator(char c);
 bool isSeparator(char c);
