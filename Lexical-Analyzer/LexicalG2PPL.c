@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
-#include "helpers.h"
 
 typedef struct {
     char type[26];        
@@ -67,7 +66,7 @@ int main() {
         if (*cursor == '\r')  { cursor++; continue; }
         if (isspace(*cursor)) goto BLANK;
         if (isdigit(*cursor)) goto INTEGER;
-        if (isalpha(*cursor)) goto IDENTIFIER;
+        if (isalpha(*cursor) && *cursor != '_') goto IDENTIFIER;
 
         switch (*cursor) {
             case '.': goto DOT;
@@ -263,7 +262,7 @@ int main() {
         }
         FLOAT: {
             if (isdigit(*++cursor)) goto FLOAT;
-            if (isSeparator(*cursor)) {
+            if (isSeparator(*cursor) && *cursor != '.') {
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, "FLOAT");
                 continue;
             }
@@ -310,7 +309,7 @@ int main() {
             goto COMMENT_MULTI;
         }
         COMMENT_MULTI_END: {
-            emitToken(tokens, &tokenCount, lexemeIndex, cursor, "COMMENT_MULTI");
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, "COMMENT_MULTI");
             continue;
         }
         /********************[IDENTIFIERS & KEYWORDS]********************/
@@ -340,7 +339,7 @@ int main() {
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, "IDENTIFIER");
                 continue;
             }
-            else goto INVALID;
+            goto INVALID;
         }
         NOISE_A: {
             if (*++cursor == 's') goto NOISE_AS;
@@ -1056,7 +1055,14 @@ int main() {
             }
             goto IDENTIFIER;
         }
-        INVALID: { break; }
+        INVALID: { 
+            ++cursor;
+            if (*cursor == '\0' || isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "INVALID");
+                continue;
+            }
+            goto INVALID;
+        }
     }
     outputTokens(tokens);
     free(inputBuffer);

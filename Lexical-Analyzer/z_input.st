@@ -43,5 +43,5 @@ comment ##
 ( ) [ ] : , .
 
 # invalids
-143variable 'Aa' 9name my$var 123.456.789 "unterminated string
+_var 143variable 'Aa' '' my$var 123.456.789 "unterminated string
 
