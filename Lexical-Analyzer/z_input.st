@@ -11,7 +11,7 @@ Hero villain
 == != > < >= <=
 
 # logical operators (keywords)
-and or not is
+and or not
 
 # keywords
 is character scene template dialogue narrate choice option ask if elif else repeat for show start end becomes until times
