@@ -62,12 +62,11 @@ int main() {
     while (*cursor) {
         /********************[START STATE]********************/
         lexemeIndex = cursor;
-        if (*cursor == '\n')  goto NEWLINE;
-        if (*cursor == '\r')  { cursor++; continue; }
-        if (isspace(*cursor)) goto BLANK;
-        if (isdigit(*cursor)) goto INTEGER;
         
         switch (*cursor) {
+            case '\n': goto NEWLINE;
+            case '\r': case '\t': 
+            case ' ': goto BLANK;
             case '.': goto DOT;
             case ',': goto COMMA;
             case ':': goto COLON;
@@ -88,14 +87,16 @@ int main() {
             case '\'': goto CHAR;
             case '\"': goto STRING;
             case '#': goto COMMENT;
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': 
+            case '9': goto INTEGER;
             case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
             case 'G': case 'H': case 'I': case 'J': case 'K': case 'L':
             case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R':
             case 'S': case 'T': case 'U': case 'V': case 'W': case 'X':
-            case 'Y': case 'Z':
-            case 'g': case 'h': case 'j': case 'k': case 'l':
-            case 'm': case 'q': case 'v': case 'x':
-            case 'y': case 'z': goto IDENTIFIER;
+            case 'Y': case 'Z': case 'g': case 'h': case 'j': case 'k': 
+            case 'l': case 'm': case 'q': case 'v': case 'x': case 'y':
+            case 'z': goto IDENTIFIER;
             case 'a': goto NOISE_A;
             case 'b': goto PREFIX_B;
             case 'c': goto PREFIX_C;
@@ -115,7 +116,7 @@ int main() {
         }
         /********************[WHITESPACE]********************/
         BLANK: { 
-            if (isspace(*++cursor)) goto BLANK; 
+            if (*++cursor == ' ' || *cursor == '\t' || *cursor == '\r') goto BLANK; 
             else continue; 
         }
         NEWLINE: {
