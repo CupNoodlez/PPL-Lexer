@@ -14,7 +14,7 @@ Hero villain
 and or not is
 
 # keywords
-character scene template dialogue narrate choice option ask if elif else repeat for show start end becomes until times
+is character scene template dialogue narrate choice option ask if elif else repeat for show start end becomes until times
 
 # reserved words 
 true false return in error fixed break continue pass with

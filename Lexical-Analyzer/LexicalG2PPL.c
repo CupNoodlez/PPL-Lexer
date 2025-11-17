@@ -66,7 +66,7 @@ int main() {
         if (*cursor == '\r')  { cursor++; continue; }
         if (isspace(*cursor)) goto BLANK;
         if (isdigit(*cursor)) goto INTEGER;
-
+        
         switch (*cursor) {
             case '.': goto DOT;
             case ',': goto COMMA;
@@ -368,16 +368,16 @@ int main() {
             goto IDENTIFIER;
         }
         NOISE_AN: {
-            if (*++cursor == 'd') goto KEYWORD_AND;
+            if (*++cursor == 'd') goto LOGICAL_AND;
             if (isSeparator(*cursor)) {
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, "NOISE_AN");
                 continue;
             }
             goto IDENTIFIER;
         }
-        KEYWORD_AND: {
+        LOGICAL_AND: {
             if (isSeparator(*++cursor)) {
-                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_AND");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "LOGICAL_AND");
                 continue;
             }
             goto IDENTIFIER;
@@ -737,19 +737,19 @@ int main() {
             goto IDENTIFIER;
         }
         PREFIX_NO: {
-            if (*++cursor == 't') goto KEYWORD_NOT;
+            if (*++cursor == 't') goto LOGICAL_NOT;
             goto IDENTIFIER;
         }
-        KEYWORD_NOT: {
+        LOGICAL_NOT: {
             if (isSeparator(*++cursor)) {
-                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_NOT");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "LOGICAL_NOT");
                 continue;
             }
             goto IDENTIFIER;
         }
         PREFIX_O: {
             if (*++cursor == 'p') goto PREFIX_OP;
-            if (*cursor == 'r') goto KEYWORD_OR;
+            if (*cursor == 'r') goto LOGICAL_OR;
             if (*cursor == 'f') goto NOISE_OF;
             goto IDENTIFIER;
         }
@@ -776,9 +776,9 @@ int main() {
             }
             goto IDENTIFIER;
         }
-        KEYWORD_OR: {
+        LOGICAL_OR: {
             if (isSeparator(*++cursor)) {
-                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "KEYWORD_OR");
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, "LOGICAL_OR");
                 continue;
             }
             goto IDENTIFIER;
@@ -1078,7 +1078,7 @@ bool isDelimiter(char c) {
 
 bool isOperator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' ||
-           c == '=' || c == '!' || c == '<' || c == '>';
+           c == '=' || c == '!' || c == '<' || c == '>' || c == '^';
 }
 
 bool isSeparator(char c) {
