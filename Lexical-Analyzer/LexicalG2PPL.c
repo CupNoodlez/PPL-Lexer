@@ -66,7 +66,6 @@ int main() {
         if (*cursor == '\r')  { cursor++; continue; }
         if (isspace(*cursor)) goto BLANK;
         if (isdigit(*cursor)) goto INTEGER;
-        if (isalpha(*cursor) && *cursor != '_') goto IDENTIFIER;
 
         switch (*cursor) {
             case '.': goto DOT;
@@ -89,6 +88,29 @@ int main() {
             case '\'': goto CHAR;
             case '\"': goto STRING;
             case '#': goto COMMENT;
+            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+            case 'G': case 'H': case 'I': case 'J': case 'K': case 'L':
+            case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R':
+            case 'S': case 'T': case 'U': case 'V': case 'W': case 'X':
+            case 'Y': case 'Z':
+            case 'g': case 'h': case 'j': case 'k': case 'l':
+            case 'm': case 'q': case 'v': case 'x':
+            case 'y': case 'z': goto IDENTIFIER;
+            case 'a': goto NOISE_A;
+            case 'b': goto PREFIX_B;
+            case 'c': goto PREFIX_C;
+            case 'd': goto PREFIX_D;
+            case 'e': goto PREFIX_E;
+            case 'f': goto PREFIX_F;
+            case 'i': goto PREFIX_I;
+            case 'n': goto PREFIX_N;
+            case 'o': goto PREFIX_O;
+            case 'p': goto PREFIX_P;
+            case 'r': goto PREFIX_R;
+            case 's': goto PREFIX_S;
+            case 't': goto PREFIX_T;
+            case 'u': goto PREFIX_U;
+            case 'w': goto PREFIX_W;
             default: goto INVALID;
         }
         /********************[WHITESPACE]********************/
@@ -314,26 +336,6 @@ int main() {
         }
         /********************[IDENTIFIERS & KEYWORDS]********************/
         IDENTIFIER: {
-            if (cursor - lexemeIndex == 0) {
-                switch (*cursor) {
-                    case 'a': goto NOISE_A;
-                    case 'b': goto PREFIX_B;
-                    case 'c': goto PREFIX_C;
-                    case 'd': goto PREFIX_D;
-                    case 'e': goto PREFIX_E;
-                    case 'f': goto PREFIX_F;
-                    case 'i': goto PREFIX_I;
-                    case 'n': goto PREFIX_N;
-                    case 'o': goto PREFIX_O;
-                    case 'p': goto PREFIX_P;
-                    case 'r': goto PREFIX_R;
-                    case 's': goto PREFIX_S;
-                    case 't': goto PREFIX_T;
-                    case 'u': goto PREFIX_U;
-                    case 'w': goto PREFIX_W;
-                    default: break;
-                }
-            }
             if (isalnum(*++cursor) || *cursor == '_') goto IDENTIFIER;
             if (isSeparator(*cursor)) { 
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, "IDENTIFIER");
