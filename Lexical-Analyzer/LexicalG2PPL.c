@@ -46,7 +46,6 @@ int main() {
         printf("Error reading file.\n");
         return 1;
     }
-    printf("File opened successfully!\n");
 
     Token tokens[1000];
     int tokenCount = 0;
@@ -455,7 +454,7 @@ int main() {
             if (*++cursor == 'n') goto PREFIX_CONTIN;
             goto IDENTIFIER;
         }
-        PREFIX_CONTIN: {
+        PREFIX_CONTIN: { 
             if (*++cursor == 'u') goto PREFIX_CONTINU;
             goto IDENTIFIER;
         }
