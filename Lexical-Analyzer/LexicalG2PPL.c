@@ -3,52 +3,19 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include "LexicalG2PPL.h"
 
-typedef struct {
-    char type[26];        
-    char lexeme[100];      
-    int lineNumber;
-} Token;
-
-typedef struct {
-    int data[100];
-    int topIndex;
-} Stack;
-
-void push(Stack *stack, int value);
-int pop(Stack *stack);
-int peek(Stack *stack);
-bool isDelimiter(char c);
-bool isOperator(char c);
-bool isSeparator(char c);
-char *read_file(const char *filename, unsigned int *out_size);
-void emitToken(Token *tokens, int *tokenCount, const char *start, const char *end, int lineNumber, const char *type); 
-void outputTokens(Token* tokens);
-void bufferChar(char *buffer, int *pos, char ch);
-
-int main() {
-    char filename[256];
-
-    // user inputs filename
-    printf("Enter filename: ");
-    scanf("%255s", filename);  
-
-    // check file extension
-    int len = strlen(filename);
-    if (len < 3 || strcmp(filename + len - 3, ".st") != 0) {
-        printf("Please enter a valid .st file format.\n");
-        return 1;
-    }
+Token* lex_all(char* filename, int* token_num) {
 
     // read file content
     unsigned int size;
     char *inputBuffer = read_file(filename, &size);
     if (!inputBuffer) {
         printf("Error reading file.\n");
-        return 1;
+        return NULL;
     }
 
-    Token tokens[1000];
+    Token* tokens = malloc(1000 * sizeof(Token));
     int tokenCount = 0;
 
     Stack indentationStack;
@@ -59,7 +26,7 @@ int main() {
     int beginningSpaces = 0;
     char* cursor = inputBuffer;
     char* lexemeIndex;
-
+    
     while (*cursor) {
         /********************[START STATE]********************/
         lexemeIndex = cursor;
@@ -1070,9 +1037,9 @@ int main() {
             goto INVALID;
         }
     }
-    outputTokens(tokens);
+    *token_num = tokenCount;
     free(inputBuffer);
-    return 0;
+    return tokens;
 }
 
 bool isDelimiter(char c) {
@@ -1107,23 +1074,6 @@ int peek(Stack *stack) {
     return -1;
 }
 
-int read_file_ext(const char *filename){
-
-    //finds the start of the file extension
-    int dot_pos = -1;
-    for (int i = 0; filename[i] != '\0'; ++i)
-        if(filename[i] == '.')
-            dot_pos = i;
-
-    if (dot_pos < 0) return 0;  
-
-    //checks if the file extension is in .st format
-    const char *ext = filename + dot_pos + 1;
-    if (ext[0] == 's' && ext[1] == 't' && ext[2] == '\0')
-        return 1;
-    return 0;
-}
-
 char *read_file(const char *filename, unsigned int *out_size) {
     FILE *fp = fopen(filename, "rb");
     if (!fp) return NULL;
@@ -1143,46 +1093,24 @@ char *read_file(const char *filename, unsigned int *out_size) {
     return buffer;
 }
 
-void emitToken(Token *tokens, int *tokenCount,
+void emitToken(Token *tokens, int *token_num,
                 const char *start, const char *end,
                 int line_number, const char *type)
 {
     int length = end - start;
 
     // copy lexeme substring
-    memcpy(tokens[*tokenCount].lexeme, start, length);
-    tokens[*tokenCount].lexeme[length] = '\0';
-    tokens[*tokenCount].lineNumber = line_number;
+    memcpy(tokens[*token_num].lexeme, start, length);
+    tokens[*token_num].lexeme[length] = '\0';
+    tokens[*token_num].lineNumber = line_number;
 
     // remove newlines for pretty print
-    for (int i = 0; tokens[*tokenCount].lexeme[i] != '\0'; ++i)
-        if (tokens[*tokenCount].lexeme[i] == '\n' || tokens[*tokenCount].lexeme[i] == '\r') 
-            tokens[*tokenCount].lexeme[i] = ' ';
+    for (int i = 0; tokens[*token_num].lexeme[i] != '\0'; ++i)
+        if (tokens[*token_num].lexeme[i] == '\n' || tokens[*token_num].lexeme[i] == '\r') 
+            tokens[*token_num].lexeme[i] = ' ';
 
     // copy token type
-    strcpy(tokens[*tokenCount].type, type);
+    strcpy(tokens[*token_num].type, type);
 
-    (*tokenCount)++;
-}
-
-void outputTokens(Token* tokens) {
-    FILE *outputFile = fopen("../SymbolTable.txt", "w");
-    if (!outputFile) {
-        printf("Error: Could not create output file.\n");
-        return;
-    }
-
-    int count = 0;
-    while (tokens[count].type[0] != '\0') {
-        count++;
-        fprintf(outputFile, "%s|%d|%s\n", tokens[count-1].type, tokens[count-1].lineNumber, tokens[count-1].lexeme);
-    }
-
-    printf("\nTotal tokens: %d\n", count);
-    printf("Output saved to: Lexical-Analyzer/SymbolTable.txt\n\n");
-    printf("Token types saved to: Tokens.txt\n");
-
-    // Print to file
-    fprintf(outputFile, "\nTotal tokens: %d\n", count);
-    fclose(outputFile);
+    (*token_num)++;
 }
