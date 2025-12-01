@@ -1,12 +1,8 @@
-# general
 .vscode/
 SymbolTable.txt
-
-# Lexer
-Lexical-Analyzer/LexicalG2PPL.exe
-Lexical-Analyzer/LexicalG2PPL
-Lexical-Analyzer/*.exe
-
-# Parser
+ParserG2PPL
+TableGen
+*.exe
+tablegen 
 
 
