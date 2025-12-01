@@ -1166,30 +1166,16 @@ void emitToken(Token *tokens, int *tokenCount,
 }
 
 void outputTokens(Token* tokens) {
-    FILE *outputFile = fopen("SymbolTable.txt", "w");
+    FILE *outputFile = fopen("../SymbolTable.txt", "w");
     if (!outputFile) {
         printf("Error: Could not create output file.\n");
         return;
     }
-    FILE *outputTokenFile = fopen("../Tokens.txt", "w");
-    if (!outputTokenFile) {
-        printf("Error: Could not create output token file.\n");
-        return;
-    }
 
-    // File table header
-    fprintf(outputFile, "TOKEN TABLE\n");
-    fprintf(outputFile, "===========\n\n");
-    fprintf(outputFile, "%-4s | %-26s | %-4s | %-45s\n", "No.", "Type", "Line", "Lexeme");
-    fprintf(outputFile, "-----+-------------------------+------+-----------------------------------------------\n");
-
-
-    // Count tokens and print them
     int count = 0;
     while (tokens[count].type[0] != '\0') {
         count++;
-        fprintf(outputFile, "%-4d | %-26s | %-4d | %-45s\n", count, tokens[count-1].type, tokens[count-1].lineNumber, tokens[count-1].lexeme);
-        fprintf(outputTokenFile, "%s, %d\n", tokens[count-1].type, tokens[count-1].lineNumber);
+        fprintf(outputFile, "%s|%d|%s\n", tokens[count-1].type, tokens[count-1].lineNumber, tokens[count-1].lexeme);
     }
 
     printf("\nTotal tokens: %d\n", count);
@@ -1198,6 +1184,5 @@ void outputTokens(Token* tokens) {
 
     // Print to file
     fprintf(outputFile, "\nTotal tokens: %d\n", count);
-
     fclose(outputFile);
 }

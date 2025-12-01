@@ -1,14 +1,11 @@
 # general
 .vscode/
-Tokens.txt
-
+SymbolTable.txt
 
 # Lexer
 Lexical-Analyzer/LexicalG2PPL.exe
 Lexical-Analyzer/LexicalG2PPL
 Lexical-Analyzer/*.exe
-Lexical-Analyzer/SymbolTable.txt
-
 
 # Parser
 
