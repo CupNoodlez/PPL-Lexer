@@ -1095,7 +1095,7 @@ char *read_file(const char *filename, unsigned int *out_size) {
 
 void emitToken(Token *tokens, int *token_num,
                 const char *start, const char *end,
-                int line_number, const char *type)
+                int line_number, const char *token_name)
 {
     int length = end - start;
 
@@ -1110,7 +1110,7 @@ void emitToken(Token *tokens, int *token_num,
             tokens[*token_num].lexeme[i] = ' ';
 
     // copy token type
-    strcpy(tokens[*token_num].type, type);
+    strcpy(tokens[*token_num].token_name, token_name);
 
     (*token_num)++;
 }

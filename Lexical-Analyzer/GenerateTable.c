@@ -38,9 +38,9 @@ void outputTokens(Token* tokens) {
     }
 
     int count = 0;
-    while (tokens[count].type[0] != '\0') {
+    while (tokens[count].token_name[0] != '\0') {
         count++;
-        fprintf(outputFile, "%s|%d|%s\n", tokens[count-1].type, tokens[count-1].lineNumber, tokens[count-1].lexeme);
+        fprintf(outputFile, "%s|%d|%s\n", tokens[count-1].token_name, tokens[count-1].lineNumber, tokens[count-1].lexeme);
     }
 
     printf("\nTotal tokens: %d\n", count);

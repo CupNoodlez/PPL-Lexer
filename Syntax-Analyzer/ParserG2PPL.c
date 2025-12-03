@@ -10,28 +10,28 @@ int current_pos = 0;
 
 bool isAtEnd();
 Token* currentToken();
-bool check(const char* type);
+bool check(const char* token_name);
 void advance();
-bool match(const char* type);
+bool match(const char* token_name);
 void parseError(const char* expected);
 void skip_noise_tokens();
 void parse_AssignmentStatement();
 void parse_Program();
 
 int main() {
-    char filename[256];
-    printf("Enter the source filename to parse: ");
-    scanf("%255s", filename);
+    char filetoken_name[256];
+    printf("Enter the source filetoken_name to parse: ");
+    scanf("%255s", filetoken_name);
     
-    tokens = lex_all(filename, &token_count);
+    tokens = lex_all(filetoken_name, &token_count);
     if (tokens == NULL) {
         printf("Lexing failed.\n");
         return 1;
     }
     // test: print all tokens
     // for (int i = 0; i < token_count; i++) {
-    //     printf("Token %d: Type='%s', Lexeme='%s', Line=%d\n", 
-    //         i + 1, tokens[i].type, tokens[i].lexeme, tokens[i].lineNumber);
+    //     printf("Token %d: token_name='%s', Lexeme='%s', Line=%d\n", 
+    //         i + 1, tokens[i].token_name, tokens[i].lexeme, tokens[i].lineNumber);
     // }
     
     printf("=== Parser Syntax Analysis Test ===\n");
@@ -59,17 +59,17 @@ Token* get_currentToken() {
     return &tokens[current_pos];
 }
 
-bool check(const char* type) {  
+bool check(const char* token_name) {  
     if (isAtEnd()) return false;
-    return strcmp(tokens[current_pos].type, type) == 0;
+    return strcmp(tokens[current_pos].token_name, token_name) == 0;
 }
 
 void advance() {
     if (!isAtEnd()) current_pos++;
 }
 
-bool match(const char* type) {
-    if (check(type)) {
+bool match(const char* token_name) {
+    if (check(token_name)) {
         advance();
         return true;
     }
@@ -81,10 +81,10 @@ void parseError(const char* expected) {
         fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
         fprintf(stderr, "Unexpected end of input. Expected '%s'.\n", expected);
     } else {
-        Token* curr = currentToken();
+        Token* curr = get_currentToken();
         fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
         fprintf(stderr, "Line %d: Expected '%s', but found token [%s] with lexeme '%s'.\n", 
-                curr->lineNumber, expected, curr->type, curr->lexeme);
+                curr->lineNumber, expected, curr->token_name, curr->lexeme);
     }
     fprintf(stderr, "------------------\n");
     free(tokens);
@@ -101,7 +101,7 @@ void parse_AssignmentStatement() {
     printf("Parsing Assignment Statement...\n");
     
     if (!match("IDENTIFIER")) {
-        parseError("IDENTIFIER (for variable name)");
+        parseError("IDENTIFIER (for variable token_name)");
     }
     printf(" -> Consumed IDENTIFIER.\n");
 
@@ -128,7 +128,7 @@ void parse_Program() {
     }
     
     if (!isAtEnd()) {
-        parseError("an IDENTIFIER or EOF (unhandled statement type)");
+        parseError("an IDENTIFIER or EOF (unhandled statement token_name)");
     }
 }
 

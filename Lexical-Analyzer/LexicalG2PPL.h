@@ -11,7 +11,7 @@ int pop(Stack *stack);
 int peek(Stack *stack);
 
 typedef struct {
-    char type[26];        
+    char  token_name[26];        
     char lexeme[100];      
     int lineNumber;
 } Token;
