@@ -20,6 +20,7 @@ void parse_Program();
 
 int main() {
     char filename[256];
+    printf("Enter the source filename to parse: ");
     scanf("%255s", filename);
     
     tokens = lex_all(filename, &token_count);
@@ -53,12 +54,12 @@ bool isAtEnd() {
     return current_pos >= token_count;
 }
 
-Token* currentToken() {
+Token* get_currentToken() {
     if (isAtEnd()) return NULL;
     return &tokens[current_pos];
 }
 
-bool check(const char* type) {
+bool check(const char* type) {  
     if (isAtEnd()) return false;
     return strcmp(tokens[current_pos].type, type) == 0;
 }
