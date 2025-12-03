@@ -4,5 +4,6 @@ ParserG2PPL
 TableGen
 *.exe
 tablegen 
+GenerateTable
 
 
