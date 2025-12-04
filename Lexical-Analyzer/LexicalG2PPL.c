@@ -90,9 +90,10 @@ Token* lex_all(char* filename, int* token_num) {
             else continue; 
         }
         NEWLINE: {
-            curr_line++;
             if (!first_line)
                 emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NEWLINE");
+            if (!first_line)
+                curr_line++;
             first_line = false;
             beginningSpaces = 0;
             
