@@ -23,6 +23,7 @@ Token* lex_all(char* filename, int* token_num) {
     indentationStack.topIndex = 0;
 
     int curr_line = 1;
+    bool first_line = true;
     int beginningSpaces = 0;
     char* cursor = inputBuffer;
     char* lexemeIndex;
@@ -30,6 +31,7 @@ Token* lex_all(char* filename, int* token_num) {
     while (*cursor) {
         /********************[START STATE]********************/
         lexemeIndex = cursor;
+        if (first_line) goto NEWLINE;
         
         switch (*cursor) {
             case '\n': goto NEWLINE;
@@ -89,7 +91,9 @@ Token* lex_all(char* filename, int* token_num) {
         }
         NEWLINE: {
             curr_line++;
-            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NEWLINE");
+            if (!first_line)
+                emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NEWLINE");
+            first_line = false;
             beginningSpaces = 0;
             
             if (*cursor == '\n') continue;
@@ -1036,6 +1040,12 @@ Token* lex_all(char* filename, int* token_num) {
             }
             goto INVALID;
         }
+    }
+
+    // Emit DEDENT tokens for any remaining indentation levels
+    while (peek(&indentationStack) > 0) {
+        pop(&indentationStack);
+        emitToken(tokens, &tokenCount, cursor, cursor, curr_line, "DEDENT");
     }
     *token_num = tokenCount;
     free(inputBuffer);
