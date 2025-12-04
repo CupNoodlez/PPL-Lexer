@@ -18,6 +18,7 @@ void parseError(const char *expected);
 void skip_noise_tokens();
 void parse_AssignmentStatement();
 void parse_Program();
+void parse_Statement();
 void parse_IDList();
 void parse_AttributeAccess();
 void parse_Literal();
@@ -42,8 +43,22 @@ void parse_AttributeBlock();
 
 void parse_AttributeList();
 
-int main()
-{
+void parse_InputStatement();
+void parse_TargetID();
+void parse_PromptContent();
+void parse_ChoiceBlock();
+void parse_ChoiceList();
+
+void parse_OutputStatement();
+void parse_Content();
+void parse_OutputBody();
+void parse_OutputBlock();
+void parse_ContentItem();
+void parse_Concat();
+void parse_ConcatElement();
+
+
+int main() {
     char filetoken_name[256];
     printf("Enter the source filetoken_name to parse: ");
     scanf("%255s", filetoken_name);
@@ -64,10 +79,9 @@ int main()
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
     printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
-    parse_AttributeBlock();
+    parse_Program();
 
-    if (!isAtEnd())
-    {
+    if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
     }
     else
@@ -151,19 +165,45 @@ void skip_noise_tokens()
     }
 }
 
-void parse_Program()
-{
+void parse_Program() {
+    printf("Enter <program>...\n");
     skip_noise_tokens();
-
-    while (check("IDENTIFIER"))
-    {
-        // parse_AssignmentStatement();
-        skip_noise_tokens();
+    if(!match("START")){
+        parseError("START keyword");
     }
-
-    if (!isAtEnd())
-    {
-        parseError("an IDENTIFIER or EOF (unhandled statement token_name)");
+    parse_Statement();
+    if(!match("END")){
+        parseError("END keyword");
+    }
+    printf("<program> (done)\n");
+ 
+}
+void parse_Statement() {
+    skip_noise_tokens();
+    printf("\nEnter <statement>...\n");
+   
+    while (!isAtEnd()) {
+       
+        if (check("IDENTIFIER")) {
+            parse_AssignmentStatement();
+        }
+        else if (check("ASK") || check("CHOICE")) {
+            parse_InputStatement();
+        }
+        else if (check("NARRATE") || check("DIALOGUE") || check("SHOW")){
+            parse_OutputStatement();
+        }
+        else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
+            skip_noise_tokens();
+            continue;
+        }
+        else {
+             parseError("an IDENTIFIER or EOF (unhandled statement token_name)");
+        }  
+    }
+ 
+    while (check("DEDENT") || check("NEWLINE")) {
+        advance();
     }
 }
 
