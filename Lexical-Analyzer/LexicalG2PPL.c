@@ -1,0 +1,1116 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
+#include <string.h>
+#include "LexicalG2PPL.h"
+
+Token* lex_all(char* filename, int* token_num) {
+
+    // read file content
+    unsigned int size;
+    char *inputBuffer = read_file(filename, &size);
+    if (!inputBuffer) {
+        printf("Error reading file.\n");
+        return NULL;
+    }
+
+    Token* tokens = malloc(1000 * sizeof(Token));
+    int tokenCount = 0;
+
+    Stack indentationStack;
+    indentationStack.data[0] = 0;
+    indentationStack.topIndex = 0;
+
+    int curr_line = 1;
+    int beginningSpaces = 0;
+    char* cursor = inputBuffer;
+    char* lexemeIndex;
+    
+    while (*cursor) {
+        /********************[START STATE]********************/
+        lexemeIndex = cursor;
+        
+        switch (*cursor) {
+            case '\n': goto NEWLINE;
+            case '\r': case '\t': 
+            case ' ': goto BLANK;
+            case '.': goto DOT;
+            case ',': goto COMMA;
+            case ':': goto COLON;
+            case '(': goto LPAREN;
+            case ')': goto RPAREN;
+            case '[': goto LBRACKET;
+            case ']': goto RBRACKET;
+            case '=': goto ASSIGNMENT_ASSIGN;
+            case '+': goto ARITHMETIC_PLUS;
+            case '-': goto ARITHMETIC_MINUS;
+            case '*': goto ARITHMETIC_MULTIPLY;
+            case '/': goto ARITHMETIC_DIVIDE;
+            case '%': goto ARITHMETIC_MODULUS;
+            case '^': goto ARITHMETIC_EXPONENT;
+            case '>': goto RELATIONAL_GREATER;
+            case '<': goto RELATIONAL_LESS;
+            case '!': goto RELATIONAL_NOT;
+            case '\'': goto CHAR;
+            case '\"': goto STRING;
+            case '#': goto COMMENT;
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': 
+            case '9': goto INTEGER;
+            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+            case 'G': case 'H': case 'I': case 'J': case 'K': case 'L':
+            case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R':
+            case 'S': case 'T': case 'U': case 'V': case 'W': case 'X':
+            case 'Y': case 'Z': case 'g': case 'h': case 'j': case 'k': 
+            case 'l': case 'm': case 'q': case 'v': case 'x': case 'y':
+            case 'z': goto IDENTIFIER;
+            case 'a': goto NOISE_A;
+            case 'b': goto PREFIX_B;
+            case 'c': goto PREFIX_C;
+            case 'd': goto PREFIX_D;
+            case 'e': goto PREFIX_E;
+            case 'f': goto PREFIX_F;
+            case 'i': goto PREFIX_I;
+            case 'n': goto PREFIX_N;
+            case 'o': goto PREFIX_O;
+            case 'p': goto PREFIX_P;
+            case 'r': goto PREFIX_R;
+            case 's': goto PREFIX_S;
+            case 't': goto PREFIX_T;
+            case 'u': goto PREFIX_U;
+            case 'w': goto PREFIX_W;
+            default: goto INVALID;
+        }
+        /********************[WHITESPACE]********************/
+        BLANK: { 
+            if (*++cursor == ' ' || *cursor == '\t' || *cursor == '\r') goto BLANK; 
+            else continue; 
+        }
+        NEWLINE: {
+            curr_line++;
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NEWLINE");
+            beginningSpaces = 0;
+            
+            if (*cursor == '\n') continue;
+            if (*cursor == '\0') {
+                while (peek(&indentationStack) > 0) {
+                    pop(&indentationStack);
+                    emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "DEDENT");
+                }
+                continue;
+            }
+            while (*cursor == ' ') {
+                beginningSpaces++;
+                cursor++;
+            }
+            if (beginningSpaces > peek(&indentationStack)) {
+                push(&indentationStack, beginningSpaces);
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "INDENT");
+                continue;
+            } 
+            else if (beginningSpaces < peek(&indentationStack)) {
+                while (beginningSpaces != peek(&indentationStack)) {
+                    int element = pop(&indentationStack);
+                    if (element == -1) goto INVALID;
+                    emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "DEDENT");
+                }
+                continue;
+            }
+            continue;
+        }
+        /********************[DELIMITERS]********************/
+        LPAREN: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "LPAREN"); continue; }
+        RPAREN: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "RPAREN"); continue; }
+        LBRACKET: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "LBRACKET"); continue; }
+        RBRACKET: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "RBRACKET"); continue; }
+        COLON: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "COLON"); continue; }
+        COMMA: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "COMMA"); continue; }
+        DOT: { emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "DOT"); continue; }
+        /********************[OPERATORS]********************/
+        ARITHMETIC_PLUS: { 
+            if (*++cursor == '=') goto ASSIGNMENT_PLUS_ASSIGN;
+            if (isSeparator(*cursor)) {  
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "PLUS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_MINUS: { 
+            if (*++cursor == '=') goto ASSIGNMENT_MINUS_ASSIGN;
+            if (isSeparator(*cursor)) {  
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "MINUS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_MULTIPLY: { 
+            if (*++cursor == '=') goto ASSIGNMENT_MULT_ASSIGN;
+            if (isSeparator(*cursor)) {  
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "MULTIPLY");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_DIVIDE: { 
+            if (*++cursor == '/') goto ARITHMETIC_FLOOR_DIVIDE;
+            if (*cursor == '=') goto ASSIGNMENT_DIV_ASSIGN;
+            if (isSeparator(*cursor)) {  
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "DIVIDE");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_MODULUS: { 
+            if (*++cursor == '=') goto ASSIGNMENT_MOD_ASSIGN;
+            if (isSeparator(*cursor)) {  
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "MODULUS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ASSIGNMENT_ASSIGN: {
+            if (*++cursor == '=') goto RELATIONAL_EQUAL_EQUAL;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "ASSIGN");
+                continue;
+            }
+            else goto INVALID;
+        }
+        ARITHMETIC_FLOOR_DIVIDE: { 
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "FLOOR_DIVIDE");
+            continue;
+        }
+        ARITHMETIC_EXPONENT: { 
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "EXPONENT");
+            continue;
+        }
+
+        ASSIGNMENT_PLUS_ASSIGN: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "PLUS_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MINUS_ASSIGN: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "MINUS_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MULT_ASSIGN: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "MULT_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_DIV_ASSIGN: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "DIV_ASSIGN");
+            continue;
+        }
+        ASSIGNMENT_MOD_ASSIGN: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "MOD_ASSIGN");
+            continue;
+        }
+        RELATIONAL_LESS: {
+            if (*++cursor == '=') goto RELATIONAL_LESS_EQUAL;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "LESS");
+                continue;
+            }
+            else goto INVALID;
+        }
+        RELATIONAL_GREATER: {
+            if (*++cursor == '=') goto RELATIONAL_GREATER_EQUAL;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "GREATER");
+                continue;
+            }
+            else goto INVALID;
+        }
+        RELATIONAL_NOT: {
+            if (*++cursor == '=') goto RELATIONAL_NOT_EQUAL;
+            else goto INVALID;
+        }
+        RELATIONAL_NOT_EQUAL: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NOT_EQUAL");
+            continue;
+        }
+        RELATIONAL_EQUAL_EQUAL: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "EQUAL_EQUAL");
+            continue;
+        }
+        RELATIONAL_GREATER_EQUAL: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "GREATER_EQUAL");
+            continue;
+        }
+        RELATIONAL_LESS_EQUAL: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "LESS_EQUAL");
+            continue;
+        }
+        /********************[LITERALS]********************/
+        INTEGER: {
+            if (isdigit(*++cursor)) goto INTEGER;
+            if (*cursor == '.')  goto FLOAT; 
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "INTEGER");
+                continue;
+            }
+            else goto INVALID;
+        }
+        FLOAT: {
+            if (isdigit(*++cursor)) goto FLOAT;
+            if (isSeparator(*cursor) && *cursor != '.') {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "FLOAT");
+                continue;
+            }
+            else goto INVALID;
+        }
+        STRING: {
+            if (*++cursor == '\"') goto STRING_END;
+            if (*cursor == '\0') goto INVALID;
+            else goto STRING;
+        }
+        STRING_END: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "STRING");
+            continue;
+        }
+        CHAR: {
+            if (*++cursor == '\'') goto INVALID;
+            else goto CHAR_CONTENT;
+        }
+        CHAR_CONTENT: {
+            if (*++cursor == '\'') goto CHAR_END;
+            else goto INVALID;
+        }
+        CHAR_END: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "CHAR");
+            continue;
+        }
+        /********************[COMMENTS]********************/
+        COMMENT: {
+            if (*++cursor == '#' && cursor-1 == lexemeIndex) goto COMMENT_MULTI;
+            if (*cursor == '\n' || *cursor == '\0') goto COMMENT_SINGLE_END;
+            goto COMMENT;
+        }
+        COMMENT_SINGLE_END: {
+            emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "COMMENT");
+            continue;
+        }
+        COMMENT_MULTI: {
+            if (*++cursor == '#') goto COMMENT_MULTI_POSSIBLE_END;
+            if (*cursor == '\0') goto COMMENT_MULTI_END;
+            if (*cursor == '\n') curr_line++;
+            goto COMMENT_MULTI;
+        }
+        COMMENT_MULTI_POSSIBLE_END: {
+            if (*++cursor == '#') goto COMMENT_MULTI_END;  
+            goto COMMENT_MULTI;
+        }
+        COMMENT_MULTI_END: {
+            emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "COMMENT_MULTI");
+            continue;
+        }
+        /********************[IDENTIFIERS & KEYWORDS]********************/
+        IDENTIFIER: {
+            if (isalnum(*++cursor) || *cursor == '_') goto IDENTIFIER;
+            if (isSeparator(*cursor)) { 
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IDENTIFIER");
+                continue;
+            }
+            goto INVALID;
+        }
+        NOISE_A: {
+            if (*++cursor == 's') goto NOISE_AS;
+            if (*cursor == 'n') goto NOISE_AN;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "A");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        NOISE_AS: {
+            if (*++cursor == 'k') goto KEYWORD_ASK;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "AS");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        KEYWORD_ASK: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "ASK");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        NOISE_AN: {
+            if (*++cursor == 'd') goto LOGICAL_AND;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "AN");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        LOGICAL_AND: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "AND");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_B: {
+            if (*++cursor == 'e') goto PREFIX_BE;
+            if (*cursor == 'r') goto PREFIX_BR;
+            goto IDENTIFIER;
+        }
+        PREFIX_BE: {
+            if (*++cursor == 'c') goto PREFIX_BEC;
+            goto IDENTIFIER;
+        }
+        PREFIX_BEC: {
+            if (*++cursor == 'o') goto PREFIX_BECO;
+            goto IDENTIFIER;
+        }
+        PREFIX_BECO: {
+            if (*++cursor == 'm') goto PREFIX_BECOM;
+            goto IDENTIFIER;
+        }
+        PREFIX_BECOM: {
+            if (*++cursor == 'e') goto PREFIX_BECOME;
+            goto IDENTIFIER;
+        }
+        PREFIX_BECOME: {
+            if (*++cursor == 's') goto KEYWORD_BECOMES;
+            goto IDENTIFIER;
+        }
+        KEYWORD_BECOMES: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "BECOMES");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_BR: {
+            if (*++cursor == 'e') goto PREFIX_BRE;
+            goto IDENTIFIER;
+        }
+        PREFIX_BRE: {
+            if (*++cursor == 'a') goto PREFIX_BREA;
+            goto IDENTIFIER;
+        }
+        PREFIX_BREA: {
+            if (*++cursor == 'k') goto RES_KEY_BREAK;
+            goto IDENTIFIER;
+        }
+        RES_KEY_BREAK: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "BREAK");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_C: {
+            if (*++cursor == 'h') goto PREFIX_CH;
+            if (*cursor == 'o') goto PREFIX_CO;
+            goto IDENTIFIER;
+        }
+        PREFIX_CO: {
+            if (*++cursor == 'n') goto PREFIX_CON;
+            goto IDENTIFIER;
+        }
+        PREFIX_CON: {
+            if (*++cursor == 't') goto PREFIX_CONT;
+            goto IDENTIFIER;
+        }
+        PREFIX_CONT: {
+            if (*++cursor == 'i') goto PREFIX_CONTI;
+            goto IDENTIFIER;
+        }
+        PREFIX_CONTI: {
+            if (*++cursor == 'n') goto PREFIX_CONTIN;
+            goto IDENTIFIER;
+        }
+        PREFIX_CONTIN: { 
+            if (*++cursor == 'u') goto PREFIX_CONTINU;
+            goto IDENTIFIER;
+        }
+        PREFIX_CONTINU: {
+            if (*++cursor == 'e') goto RES_KEY_CONTINUE;
+            goto IDENTIFIER;
+        }
+        RES_KEY_CONTINUE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "CONTINUE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_CH: {
+            if (*++cursor == 'a') goto PREFIX_CHA;
+            if (*cursor == 'o') goto PREFIX_CHO;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHA: {
+            if (*++cursor == 'r') goto PREFIX_CHAR;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHAR: {
+            if (*++cursor == 'a') goto PREFIX_CHARA;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHARA: {
+            if (*++cursor == 'c') goto PREFIX_CHARAC;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHARAC: {
+            if (*++cursor == 't') goto PREFIX_CHARACT;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHARACT: {
+            if (*++cursor == 'e') goto PREFIX_CHARACTE;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHARACTE: {
+            if (*++cursor == 'r') goto KEYWORD_CHARACTER;
+            goto IDENTIFIER;
+        }
+        KEYWORD_CHARACTER: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "CHARACTER");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_CHO: {
+            if (*++cursor == 'i') goto PREFIX_CHOI;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHOI: {
+            if (*++cursor == 'c') goto PREFIX_CHOIC;
+            goto IDENTIFIER;
+        }
+        PREFIX_CHOIC: {
+            if (*++cursor == 'e') goto KEYWORD_CHOICE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_CHOICE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "CHOICE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_D: {
+            if (*++cursor == 'i') goto PREFIX_DI;
+            goto IDENTIFIER;
+        }
+        PREFIX_DI: {
+            if (*++cursor == 'a') goto PREFIX_DIA;
+            goto IDENTIFIER;
+        }
+        PREFIX_DIA: {
+            if (*++cursor == 'l') goto PREFIX_DIAL;
+            goto IDENTIFIER;
+        }
+        PREFIX_DIAL: {
+            if (*++cursor == 'o') goto PREFIX_DIALO;
+            goto IDENTIFIER;
+        }
+        PREFIX_DIALO: {
+            if (*++cursor == 'g') goto PREFIX_DIALOG;
+            goto IDENTIFIER;
+        }
+        PREFIX_DIALOG: {
+            if (*++cursor == 'u') goto PREFIX_DIALOGU;
+            goto IDENTIFIER;
+        }
+        PREFIX_DIALOGU: {
+            if (*++cursor == 'e') goto KEYWORD_DIALOGUE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_DIALOGUE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "DIALOGUE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_E: {
+            if (*++cursor == 'l') goto PREFIX_EL;
+            if (*cursor == 'n') goto PREFIX_EN;
+            if (*cursor == 'r') goto PREFIX_ER;
+            goto IDENTIFIER;
+        }
+        PREFIX_EL: {
+            if (*++cursor == 'i') goto PREFIX_ELI;
+            if (*cursor == 's') goto PREFIX_ELS;
+            goto IDENTIFIER;
+        }
+        PREFIX_ELI: {
+            if (*++cursor == 'f') goto KEYWORD_ELIF;
+            goto IDENTIFIER;
+        }
+        KEYWORD_ELIF: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "ELIF");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_ELS: {
+            if (*++cursor == 'e') goto KEYWORD_ELSE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_ELSE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "ELSE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_EN: {
+            if (*++cursor == 'd') goto KEYWORD_END;
+            goto IDENTIFIER;
+        }
+        KEYWORD_END: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "END");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_ER: {
+            if (*++cursor == 'r') goto PREFIX_ERR;
+            goto IDENTIFIER;
+        }
+        PREFIX_ERR: {
+            if (*++cursor == 'o') goto PREFIX_ERRO;
+            goto IDENTIFIER;
+        }
+        PREFIX_ERRO: {
+            if (*++cursor == 'r') goto RES_KEY_ERROR;
+            goto IDENTIFIER;
+        }
+        RES_KEY_ERROR: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "ERROR");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_F: {
+            if (*++cursor == 'o') goto PREFIX_FO;
+            if (*cursor == 'a') goto PREFIX_FA;
+            if (*cursor == 'i') goto PREFIX_FI;
+            goto IDENTIFIER;
+        }
+        PREFIX_FA: {
+            if (*++cursor == 'l') goto PREFIX_FAL;
+            goto IDENTIFIER;
+        }
+        PREFIX_FAL: {
+            if (*++cursor == 's') goto PREFIX_FALS;
+            goto IDENTIFIER;
+        }
+        PREFIX_FALS: {
+            if (*++cursor == 'e') goto RES_KEY_FALSE;
+            goto IDENTIFIER;
+        }
+        RES_KEY_FALSE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "FALSE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_FO: {
+            if (*++cursor == 'r') goto KEYWORD_FOR;
+            goto IDENTIFIER;
+        }
+        KEYWORD_FOR: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "FOR");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_FI: {
+            if (*++cursor == 'x') goto PREFIX_FIX;
+            goto IDENTIFIER;
+        }
+        PREFIX_FIX: {
+            if (*++cursor == 'e') goto PREFIX_FIXE;
+            goto IDENTIFIER;
+        }
+        PREFIX_FIXE: {
+            if (*++cursor == 'd') goto RES_KEY_FIXED;
+            goto IDENTIFIER;
+        }
+        RES_KEY_FIXED: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "FIXED");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_I: {
+            if (*++cursor == 'f') goto KEYWORD_IF;
+            if (*cursor == 'n') goto RES_KEY_IN;
+            if (*cursor == 's') goto KEYWORD_IS;
+            goto IDENTIFIER;
+        }
+        KEYWORD_IF: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IF");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        RES_KEY_IN: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IN");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        KEYWORD_IS: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IS");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_N: {
+            if (*++cursor == 'a') goto PREFIX_NA;
+            if (*cursor == 'o') goto PREFIX_NO;
+            goto IDENTIFIER;
+        }
+        PREFIX_NA: {
+            if (*++cursor == 'r') goto PREFIX_NAR;
+            goto IDENTIFIER;
+        }
+        PREFIX_NAR: {
+            if (*++cursor == 'r') goto PREFIX_NARR;
+            goto IDENTIFIER;
+        }
+        PREFIX_NARR: {
+            if (*++cursor == 'a') goto PREFIX_NARRA;
+            goto IDENTIFIER;
+        }
+        PREFIX_NARRA: {
+            if (*++cursor == 't') goto PREFIX_NARRAT;
+            goto IDENTIFIER;
+        }
+        PREFIX_NARRAT: {
+            if (*++cursor == 'e') goto KEYWORD_NARRATE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_NARRATE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "NARRATE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_NO: {
+            if (*++cursor == 't') goto LOGICAL_NOT;
+            goto IDENTIFIER;
+        }
+        LOGICAL_NOT: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "NOT");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_O: {
+            if (*++cursor == 'p') goto PREFIX_OP;
+            if (*cursor == 'r') goto LOGICAL_OR;
+            if (*cursor == 'f') goto NOISE_OF;
+            goto IDENTIFIER;
+        }
+        PREFIX_OP: {
+            if (*++cursor == 't') goto PREFIX_OPT;
+            goto IDENTIFIER;
+        }
+        PREFIX_OPT: {
+            if (*++cursor == 'i') goto PREFIX_OPTI;
+            goto IDENTIFIER;
+        }
+        PREFIX_OPTI: {
+            if (*++cursor == 'o') goto PREFIX_OPTIO;
+            goto IDENTIFIER;
+        }
+        PREFIX_OPTIO: {
+            if (*++cursor == 'n') goto KEYWORD_OPTION;
+            goto IDENTIFIER;
+        }
+        KEYWORD_OPTION: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "OPTION");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        LOGICAL_OR: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "OR");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        NOISE_OF: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "OF");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_P: {
+            if (*++cursor == 'a') goto PREFIX_PA;
+            goto IDENTIFIER;
+        }
+        PREFIX_PA: {
+            if (*++cursor == 's') goto PREFIX_PAS;
+            goto IDENTIFIER;
+        }
+        PREFIX_PAS: {
+            if (*++cursor == 's') goto RES_KEY_PASS;
+            goto IDENTIFIER;
+        }
+        RES_KEY_PASS: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "PASS");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_R: {
+            if (*++cursor == 'e') goto PREFIX_RE;
+            goto IDENTIFIER;
+        }
+        PREFIX_RE: {
+            if (*++cursor == 'p') goto PREFIX_REP;
+            if (*cursor == 't') goto PREFIX_RET;
+            goto IDENTIFIER;
+        }
+        PREFIX_REP: {
+            if (*++cursor == 'e') goto PREFIX_REPE;
+            goto IDENTIFIER;
+        }
+        PREFIX_REPE: {
+            if (*++cursor == 'a') goto PREFIX_REPEA;
+            goto IDENTIFIER;
+        }
+        PREFIX_REPEA: {
+            if (*++cursor == 't') goto KEYWORD_REPEAT;
+            goto IDENTIFIER;
+        }
+        KEYWORD_REPEAT: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "REPEAT");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_RET: {
+            if (*++cursor == 'u') goto PREFIX_RETU;
+            goto IDENTIFIER;
+        }
+        PREFIX_RETU: {
+            if (*++cursor == 'r') goto PREFIX_RETUR;
+            goto IDENTIFIER;
+        }
+        PREFIX_RETUR: {
+            if (*++cursor == 'n') goto RES_KEY_RETURN;
+            goto IDENTIFIER;
+        }
+        RES_KEY_RETURN: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "RETURN");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_S: {
+            if (*++cursor == 'c') goto PREFIX_SC;
+            if (*cursor == 'h') goto PREFIX_SH;
+            if (*cursor == 't') goto PREFIX_ST;
+            goto IDENTIFIER;
+        }
+        PREFIX_SC: {
+            if (*++cursor == 'e') goto PREFIX_SCE;
+            goto IDENTIFIER;
+        }
+        PREFIX_SCE: {
+            if (*++cursor == 'n') goto PREFIX_SCEN;
+            goto IDENTIFIER;
+        }
+        PREFIX_SCEN: {
+            if (*++cursor == 'e') goto KEYWORD_SCENE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_SCENE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "SCENE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_SH: {
+            if (*++cursor == 'o') goto PREFIX_SHO;
+            goto IDENTIFIER;
+        }
+        PREFIX_SHO: {
+            if (*++cursor == 'w') goto KEYWORD_SHOW;
+            goto IDENTIFIER;
+        }
+        KEYWORD_SHOW: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "SHOW");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_ST: {
+            if (*++cursor == 'a') goto PREFIX_STA;
+            goto IDENTIFIER;
+        }
+        PREFIX_STA: {
+            if (*++cursor == 'r') goto PREFIX_STAR;
+            goto IDENTIFIER;
+        }
+        PREFIX_STAR: {
+            if (*++cursor == 't') goto KEYWORD_START;
+            goto IDENTIFIER;
+        }
+        KEYWORD_START: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "START");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_T: {
+            if (*++cursor == 'e') goto PREFIX_TE;
+            if (*cursor == 'i') goto PREFIX_TI;
+            if (*cursor == 'h') goto PREFIX_TH;
+            if (*cursor == 'r') goto PREFIX_TR;
+            if (*cursor == 'o') goto NOISE_TO;
+            goto IDENTIFIER;
+        }
+        PREFIX_TE: {
+            if (*++cursor == 'm') goto PREFIX_TEM;
+            if (*cursor == 'n') goto NOISE_THEN;
+            goto IDENTIFIER;
+        }
+        PREFIX_TEM: {
+            if (*++cursor == 'p') goto PREFIX_TEMP;
+            goto IDENTIFIER;
+        }
+        PREFIX_TEMP: {
+            if (*++cursor == 'l') goto PREFIX_TEMPL;
+            goto IDENTIFIER;
+        }
+        PREFIX_TEMPL: {
+            if (*++cursor == 'a') goto PREFIX_TEMPLA;
+            goto IDENTIFIER;
+        }
+        PREFIX_TEMPLA: {
+            if (*++cursor == 't') goto PREFIX_TEMPLAT;
+            goto IDENTIFIER;
+        }
+        PREFIX_TEMPLAT: {
+            if (*++cursor == 'e') goto KEYWORD_TEMPLATE;
+            goto IDENTIFIER;
+        }
+        KEYWORD_TEMPLATE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "TEMPLATE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_TI: {
+            if (*++cursor == 'm') goto PREFIX_TIM;
+            goto IDENTIFIER;
+        }
+        PREFIX_TIM: {
+            if (*++cursor == 'e') goto PREFIX_TIME;
+            goto IDENTIFIER;
+        }
+        PREFIX_TIME: {
+            if (*++cursor == 's') goto KEYWORD_TIMES;
+            goto IDENTIFIER;
+        }
+        KEYWORD_TIMES: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "TIMES");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_TH: {
+            if (*++cursor == 'e') goto NOISE_THE;
+            goto IDENTIFIER;
+        }
+        NOISE_THE: {
+            if (*++cursor == 'n') goto NOISE_THEN;
+            if (isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "THE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        NOISE_THEN: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "THEN");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        NOISE_TO: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "TO");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_TR: {
+            if (*++cursor == 'u') goto PREFIX_TRU;
+            goto IDENTIFIER;
+        }
+        PREFIX_TRU: {
+            if (*++cursor == 'e') goto RES_KEY_TRUE;
+            goto IDENTIFIER;
+        }
+        RES_KEY_TRUE: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "TRUE");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_U: {
+            if (*++cursor == 'n') goto PREFIX_UN;
+            goto IDENTIFIER;
+        }
+        PREFIX_UN: {
+            if (*++cursor == 't') goto PREFIX_UNT;
+            goto IDENTIFIER;
+        }
+        PREFIX_UNT: {
+            if (*++cursor == 'i') goto PREFIX_UNTI;
+            goto IDENTIFIER;
+        }
+        PREFIX_UNTI: {
+            if (*++cursor == 'l') goto KEYWORD_UNTIL;
+            goto IDENTIFIER;
+        }
+        KEYWORD_UNTIL: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "UNTIL");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        PREFIX_W: {
+            if (*++cursor == 'i') goto PREFIX_WI;
+            goto IDENTIFIER;
+        }
+        PREFIX_WI: {
+            if (*++cursor == 't') goto PREFIX_WIT;
+            goto IDENTIFIER;
+        }
+        PREFIX_WIT: {
+            if (*++cursor == 'h') goto RES_KEY_WITH;
+            goto IDENTIFIER;
+        }
+        RES_KEY_WITH: {
+            if (isSeparator(*++cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "WITH");
+                continue;
+            }
+            goto IDENTIFIER;
+        }
+        INVALID: { 
+            ++cursor;
+            if (*cursor == '\0' || isSeparator(*cursor)) {
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "INVALID");
+                continue;
+            }
+            goto INVALID;
+        }
+    }
+    *token_num = tokenCount;
+    free(inputBuffer);
+    return tokens;
+}
+
+bool isDelimiter(char c) {
+    return c == ',' || c == ':' || c == '.' || c == '(' ||
+           c == ')' || c == '[' || c == ']';
+}
+
+bool isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/' || c == '%' ||
+           c == '=' || c == '!' || c == '<' || c == '>' || c == '^';
+}
+
+bool isSeparator(char c) {
+    return isspace(c) || isDelimiter(c) || isOperator(c) || c == '\0';
+}
+
+void push(Stack *stack, int value) {
+    if (stack->topIndex < 99) {
+        stack->data[++(stack->topIndex)] = value;
+    }
+}
+int pop(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[(stack->topIndex)--];
+    }
+    return -1;
+}
+int peek(Stack *stack) {
+    if (stack->topIndex >= 0) {
+        return stack->data[stack->topIndex];
+    }
+    return -1;
+}
+
+char *read_file(const char *filename, unsigned int *out_size) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) return NULL;
+
+    fseek(fp, 0, SEEK_END);
+    long size = ftell(fp);
+    rewind(fp);
+
+    char *buffer = malloc(size + 1);
+    if (!buffer) return NULL;
+
+    fread(buffer, 1, size, fp);
+    buffer[size] = '\0';   // null-terminate for string logic
+    fclose(fp);
+
+    if (out_size) *out_size = size;
+    return buffer;
+}
+
+void emitToken(Token *tokens, int *token_num,
+                const char *start, const char *end,
+                int line_number, const char *token_name)
+{
+    int length = end - start;
+
+    // copy lexeme substring
+    memcpy(tokens[*token_num].lexeme, start, length);
+    tokens[*token_num].lexeme[length] = '\0';
+    tokens[*token_num].lineNumber = line_number;
+
+    // remove newlines for pretty print
+    for (int i = 0; tokens[*token_num].lexeme[i] != '\0'; ++i)
+        if (tokens[*token_num].lexeme[i] == '\n' || tokens[*token_num].lexeme[i] == '\r') 
+            tokens[*token_num].lexeme[i] = ' ';
+
+    // copy token type
+    strcpy(tokens[*token_num].token_name, token_name);
+
+    (*token_num)++;
+}

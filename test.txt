@@ -1,5 +1,0 @@
-scene main { //hello
-        character hero 
-        emotion happy 
-        set x = 10 + 2
-        };

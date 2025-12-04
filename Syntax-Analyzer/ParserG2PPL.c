@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,10 @@ void advance() {
 bool match(const char* token_name) {
     if (check(token_name)) {
         advance();
+        if(!isAtEnd()){
+            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        }
+        
         return true;
     }
     return false;
