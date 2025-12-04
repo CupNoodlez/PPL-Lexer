@@ -73,7 +73,10 @@ void advance() {
 bool match(const char* token_name) {
     if (check(token_name)) {
         advance();
-        printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        if(!isAtEnd()){
+            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        }
+        
         return true;
     }
     return false;
