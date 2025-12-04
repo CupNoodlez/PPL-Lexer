@@ -112,21 +112,18 @@ void advance()
 }
 
 
-bool match(const char *token_name)
-{
-    if (check(token_name))
-    {
+bool match(const char* token_name) {
+    if (check(token_name)) {
         advance();
-
-        if (!isAtEnd())
-            printf("Next token is: %d Next lexeme is %s\n", current_pos + 1, tokens[current_pos].lexeme);
-        else
-            printf("Next token is: %d Next lexeme is <EOF>\n", current_pos + 1);
-
+        if(!isAtEnd()){
+            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        }
+        
         return true;
     }
     return false;
 }
+
 void parseError(const char *expected)
 {
     if (isAtEnd())
@@ -263,7 +260,6 @@ void parse_Literal()
                 parseError("FLOAT");
         }
 
-        skip_noise_tokens();
         printf("<literal> (done)\n");
         return;
     }
@@ -282,7 +278,6 @@ void parse_Literal()
                 parseError("CHAR");
         }
 
-        skip_noise_tokens();
         printf("<literal> (done)\n");
         return;
     }
@@ -668,15 +663,12 @@ void parse_AttributeList()
 
     parse_Literal();
 
-    while (check("NEWLINE"))
+    while (match("NEWLINE"))
     {
-        match("NEWLINE");
-
-        if (check("DEDENT"))
-        {
-
+        if(check("DEDENT")){
             break;
         }
+        
         parse_AttributeAccess();
 
         if (!match("ASSIGN"))
