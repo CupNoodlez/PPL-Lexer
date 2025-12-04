@@ -17,6 +17,7 @@ bool match(const char* token_name);
 void parseError(const char* expected);
 void skip_noise_tokens();
 void parse_AssignmentStatement();
+void parse_AssignmentOperator();
 void parse_Program();
 void parse_IDList();
 void parse_AttributeAccess();
@@ -52,7 +53,7 @@ int main() {
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
     printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
-    parse_Expression();
+    parse_AssignmentStatement();
     
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
@@ -378,3 +379,51 @@ void parse_Factor() {
 }
  
 /* ---- EXPRESSION PARSING ---- */
+
+/* ---- ASSIGNMENT STATEMENT ---- */
+void parse_AssignmentStatement()
+{
+    printf("Parsing Assignment Statement...\n");
+ 
+    parse_AttributeAccess();
+    parse_AssignmentOperator();
+    parse_Expression();
+ 
+    printf("<assignment_statement> (done)\n");
+}
+
+void parse_AssignmentOperator()
+{
+    printf("Enter <assignment_operator>\n");
+ 
+    if (match("ASSIGN"))
+    {
+        printf("-> ASSIGN\n");
+    }
+    else if (match("PLUS_ASSIGN"))
+    {
+        printf("-> PLUS_ASSIGN\n");
+    }
+    else if (match("MINUS_ASSIGN"))
+    {
+        printf("-> MINUS_ASSIGN\n");
+    }
+    else if (match("MULT_ASSIGN"))
+    {
+        printf("-> MULT_ASSIGN\n");
+    }
+    else if (match("DIV_ASSIGN"))
+    {
+        printf("-> DIV_ASSIGN\n");
+    }
+    else if (match("MOD_ASSIGN"))
+    {
+        printf("-> MOD_ASSIGN\n");
+    }
+    else
+    {
+        parseError("assignment operator (=, +=, -=, *=, /=, %=)");
+    }
+ 
+    printf("<assignment_operator> done\n");
+}
