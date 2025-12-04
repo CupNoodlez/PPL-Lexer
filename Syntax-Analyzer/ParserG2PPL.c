@@ -21,6 +21,16 @@ void parse_Program();
 void parse_IDList();
 void parse_AttributeAccess();
 void parse_BooleanLiteral();
+void parse_Literal();
+void parse_Expression();
+void parse_AndExpr();
+void parse_NotExpr();
+void parse_RelationalExpr();
+void parse_ArithmeticExpr();
+void parse_Term();
+void parse_PowerExpr();
+void parse_UnaryExpr();
+void parse_Factor();
 
 int main() {
     char filetoken_name[256];
@@ -42,7 +52,7 @@ int main() {
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
     printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
-    parse_BooleanLiteral();
+    parse_Expression();
     
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
@@ -172,3 +182,199 @@ void parse_BooleanLiteral(){
     skip_noise_tokens();
     printf("<boolean_literal> (done)\n");
 }
+
+// ...existing code...
+void parse_Literal(){
+    printf("Enter <literal>\n");
+
+    // Booleans
+    if (check("TRUE") || check("FALSE")) {
+        parse_BooleanLiteral();
+        return;
+    }
+
+    // Numbers
+    if (check("INTEGER") || check("FLOAT")) {
+        if (check("INTEGER")) {
+            if (!match("INTEGER")) parseError("INTEGER");
+        } else {
+            if (!match("FLOAT")) parseError("FLOAT");
+        }
+
+        skip_noise_tokens();
+        printf("<literal> (done)\n");
+        return;
+    }
+
+    // Strings / Chars
+    if (check("STRING") || check("CHAR")) {
+        if (check("STRING")) {
+            if (!match("STRING")) parseError("STRING");
+        } else {
+            if (!match("CHAR")) parseError("CHAR");
+        }
+
+        skip_noise_tokens();
+        printf("<literal> (done)\n");
+        return;
+    }
+
+    parseError("a literal (INTEGER, FLOAT, STRING, CHAR, TRUE, or FALSE)");
+}
+
+/* ---- EXPRESSION PARSING ---- */
+ 
+void parse_Expression() {
+    printf("Enter <expression> \n");
+ 
+    parse_AndExpr();
+ 
+    while (check("OR")) {
+        if (!match("OR")){
+            parseError("OR");
+        }
+        parse_AndExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<expression> (done) \n");
+}
+ 
+void parse_AndExpr() {
+    printf("Enter <and_expr> \n");
+ 
+    parse_NotExpr();
+   
+    while (check("AND")) {
+        if(!match("AND")){
+            parseError("AND");
+        }
+        parse_NotExpr();
+    }
+   
+    skip_noise_tokens();
+    printf("<and_expr> (done) \n");
+}
+ 
+void parse_NotExpr() {
+    printf("Enter <not_expr> \n");
+ 
+    while (check("NOT")) {
+        if(!match("NOT")){
+            parseError("NOT");
+        }
+    }
+   
+    parse_RelationalExpr();
+ 
+    skip_noise_tokens();
+    printf("<not_expr> (done) \n");    
+}
+ 
+void parse_RelationalExpr() {
+    printf("Enter <relational_expr> \n");
+ 
+    parse_ArithmeticExpr();
+ 
+    if ((match("LESS") || match("LESS_EQUAL") || match("GREATER") ||
+        match("GREATER_EQUAL") || match("EQUAL_EQUAL") ||
+        match("NOT_EQUAL") || match("IS"))) {
+            parse_ArithmeticExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<relational_expr> (done) \n");
+ 
+}
+ 
+void parse_ArithmeticExpr() {
+    printf("Enter <arithmetic_expr> \n");
+ 
+    parse_Term();
+ 
+    while(check("PLUS") || check("MINUS")) {
+        if (!(match("PLUS") || match("MINUS"))) {
+            parseError("ADDITIVE_OP");
+        }
+        parse_Term();
+    }
+ 
+    skip_noise_tokens();
+    printf("<arithmetic_expr> (done) \n");
+}
+ 
+void parse_Term() {
+    printf("Enter <term> \n");
+ 
+    parse_PowerExpr();
+ 
+    while(check("MULTIPLY") || check("DIVIDE") || check("MODULUS")) {
+        if (!(match("MULTIPLY") || match("DIVIDE") || match("MODULUS"))){
+            parseError("MULTIPLICATIVE_OP");
+        }
+        parse_PowerExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<term> (done) \n");
+}
+ 
+void parse_PowerExpr() {
+    printf("Enter <power_expr> \n");
+ 
+    parse_UnaryExpr();
+ 
+    while(check("EXPONENT")) {
+        if (!match("EXPONENT")){
+            parseError("'^'");
+        }
+        parse_UnaryExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<power_expr> (done) \n");
+}
+ 
+void parse_UnaryExpr() {
+    printf("Enter <unary_expr> \n");
+ 
+    while(check("MINUS")){
+        if(!match("MINUS")){
+            parseError("'-'");
+        }
+    }
+ 
+    parse_Factor();
+ 
+    skip_noise_tokens();
+    printf("<unary_expr> (done) \n");
+}
+ 
+void parse_Factor() {
+    printf("Enter <factor> \n");
+ 
+    if (match("LPAREN")) {
+        parse_Expression();
+        if (!match("RPAREN")){
+            parseError("')");
+        }
+ 
+        skip_noise_tokens();
+        printf("<factor> (done) \n");
+        return;
+    }
+ 
+    if(check("IDENTIFIER")) {
+        parse_AttributeAccess();
+        skip_noise_tokens();
+        printf("<factor> (done) \n");
+        return;
+    }
+ 
+    parse_Literal();
+ 
+    skip_noise_tokens();
+    printf("<factor> (done) \n");
+}
+ 
+/* ---- EXPRESSION PARSING ---- */
