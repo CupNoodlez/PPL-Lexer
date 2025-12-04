@@ -1,9 +1,5 @@
 
-<<<<<<< HEAD
 #include <stdbool.h>
-=======
-
->>>>>>> origin/dev
 
 typedef struct {
     int data[100];

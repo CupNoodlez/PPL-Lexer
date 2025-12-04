@@ -1,9 +1,8 @@
-# Sample test file for the parser
+narrate: "The castle gates open slowly"
 
-x = 10
+#hero_script1 = "We must hurry!"
+#dialogue hero:  hero_script1 
 
-ask player.name "What is your choice?" as response
+#ask Guard1  "what are u doing" as Wingman
 
-choice as pick:
-    ["Yes": 1],
-    ["No": 0],
+

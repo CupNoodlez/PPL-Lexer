@@ -28,7 +28,10 @@ void parse_ChoiceList();
 void parse_AttributeAccess();
 void parse_Attribute();
 void parse_Scenario();
-
+void parse_OutputStatement();
+void parse_OutputBody();
+void parse_ContentItem();
+void parse_OutputBlock();
 
 int main() {
     char filetoken_name[256];
@@ -46,8 +49,8 @@ int main() {
     //         i + 1, tokens[i].token_name, tokens[i].lexeme, tokens[i].lineNumber);
     // }
     
-    printf("=== Parser Syntax Analysis Test ===\n");
-    printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
+    printf("\n=== Parser Syntax Analysis Test ===\n");
+    printf("Tokens loaded: %d. Starting parse.\n", token_count);
 
     parse_Program(); 
     
@@ -114,7 +117,7 @@ void skip_noise_tokens() {
 }
 
 void parse_AssignmentStatement() {
-    printf("Parsing Assignment Statement...\n");
+    printf("Parsing Assignment Statement...\n\n");
     
     if (!match("IDENTIFIER")) {
         parseError("IDENTIFIER (for variable token_name)");
@@ -127,10 +130,11 @@ void parse_AssignmentStatement() {
     }
     printf(" -> Consumed Assignment Operator.\n");
 
-    if (!match("INTEGER")) {
-        parseError("INTEGER (for value)");
+    //parseLiteral ata to pero parang ginagawa na naman na
+    if (!(match("INTEGER") || match("STRING") || match("FLOAT") || match("CHAR") )){
+        parseError("must be literal"); //expect a literal
     }
-    printf(" -> Consumed INTEGER.\n");
+    printf(" -> Consumed LITERAL.\n");
     
     printf("--- Assignment Statement Parsed OK ---\n");
 }
@@ -145,11 +149,14 @@ void parse_Program() {
         }
         else if (check("ASK") || check("CHOICE")) {
             parse_InputStatement();
+        } 
+        else if (check("NARRATE") || check("DIALOGUE") || check("SHOW")){
+            parse_OutputStatement();
         }
         else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
             skip_noise_tokens();
             continue;
-        }
+        } 
         else {
             parseError("IDENTIFIER, ASK, CHOICE, or EOF");
         }
@@ -158,14 +165,100 @@ void parse_Program() {
     }
 }
 
+/*
+
+<output_stmt> ::= <output_keyword> [target_ID] ":" <ouput_body>
+<output_body> ::= "STRING" | <attribute_access>
+
+*/
+
+void parse_OutputStatement() {
+    skip_noise_tokens();
+    printf("\nParsing Output Statement...\n\n");
+
+    // Parse output keyword
+    if(check("NARRATE") || check("DIALOGUE") || check("SHOW")) {
+        if(match("NARRATE")) printf(" -> Consumed NARRATE keyword\n");
+        else if(match("DIALOGUE")) printf(" -> Consumed DIALOGUE keyword\n");
+        else if(match("SHOW")) printf(" -> Consumed SHOW keyword\n");
+    } else {
+        parseError("NARRATE, DIALOGUE, or SHOW");
+    }
+
+    if(check("IDENTIFIER")) {  //optional attribute access
+        parse_TargetID();
+        printf(" -> Parsed Attribute Access\n");
+    }
+
+    if(match("COLON")) {
+        printf(" -> Consumed COLON\n");
+    } else {
+        parseError("COLON"); //expects a colon
+    }
+
+    parse_OutputBody();
+
+    printf("--- Output Statement Parsed OK ---\n");
+}
+
+void parse_OutputBody(){
+
+    printf("\nParsing Output Body...\n\n");
+   if(check("INDENT")){
+        parse_OutputBlock();
+   } 
+   else if (check("STRING") || check("IDENTIFIER")) {
+        parse_ContentItem();
+   } 
+   else {
+        parseError("///"); //expect an indent, string, or identifier
+   }
+
+    printf("--- Output Body Parsed OK ---\n");
+}
+
+void parse_OutputBlock(){
+    printf("\nParsing Output Block...\n\n");
+    if(!match("INDENT")){
+        parseError("///"); //expect indent
+    }
+    printf(" -> Consumed INDENT\n");
+
+    parse_ContentItem();
+
+    if(!match("DEDENT")){
+        parseError("///"); // expect dedent
+    }
+    printf(" -> Consumed DEDENT\n");
+
+    printf("--- Output Block Parsed OK ---\n");
+    
+}
+
+void parse_ContentItem(){
+    printf("\nParsing Content Item...\n\n");
+    if(match("STRING")){
+        printf(" -> Consumed STRING\n");
+    } 
+    else if (check("IDENTIFIER")){
+        parse_AttributeAccess();
+    } 
+    else {
+        parseError("STRING or IDENTIFIER"); //expects a string or identifier
+    }
+
+    printf("--- Content Item Parsed OK ---\n");
+}
+
 
 void parse_InputStatement(){
 
     skip_noise_tokens();
-    printf("Parsing Input Statement...\n");
+    printf("\nParsing Input Statement...\n\n");
 
 
-    if(match("ASK")){
+    if(check("ASK")){
+        match("ASK");
         printf(" -> Consumed ASK keyword.\n");
 
         if(check("IDENTIFIER")){
@@ -184,19 +277,27 @@ void parse_InputStatement(){
         }
         printf(" -> Consumed IDENTIFIER.\n");
 
-    } else if (match("CHOICE")){
+    } else if (check("CHOICE")){
+        match("CHOICE");
         printf(" -> Consumed CHOICE keyword.\n");
 
         if(!match("AS")){
             parseError("///"); //expect an "as" keyword
         }
+        printf(" -> Consumed AS keyword.\n");
 
         if(!match("IDENTIFIER")){
             parseError("///"); //expect an "identifier" 
         }
+        printf(" -> Consumed IDENTIFIER.\n");
 
-         if(!match("COLON")){
+        if(!match("COLON")){
             parseError("///"); //expect a "colon" 
+        }
+        printf(" -> Consumed COLON.\n");
+
+        if(!match("NEWLINE")){
+            parseError("///"); //expect a "newLine" 
         }
 
         parse_ChoiceBlock();
@@ -204,22 +305,30 @@ void parse_InputStatement(){
     } else {
         parseError("///"); //expects an "AS" keyword
     } 
+
+    printf("--- Input Statement Parsed OK ---\n");
 }
 
 void parse_TargetID(){
+    printf("\nParsing Target ID...\n\n");
     parse_AttributeAccess();
     printf(" -> Consumed Target_ID.\n");
+
+    printf("--- TargetID Parsed OK ---\n");
 }
 
 void parse_PromptContent(){
+    printf("\nParsing Prompt Content...\n\n");
     if(!match("STRING")){
         parseError("///");
     }
     printf(" -> Consumed STRING.\n");
+    printf("--- Prompt Content Parsed OK ---\n");
 }
 
 void parse_AttributeAccess() {
 
+    printf("\nParsing Attribute Access...\n\n");
     // id is ALWAYS required
     if (!match("IDENTIFIER")) {
         parseError("IDENTIFIER");
@@ -234,80 +343,101 @@ void parse_AttributeAccess() {
         }
         printf(" -> Consumed ATTRIBUTE/SCENARIO IDENTIFIER.\n");
     }
+
+    printf("--- Attribute Access Parsed OK ---\n");
 }
 
 void parse_Attribute(){
+    printf("\nParsing Attribute...\n\n");
     if(!match("IDENTIFIER")){
         parseError("///"); //expects an "Identifier"
     } 
     printf(" -> Consumed ATTRIBUTE.\n");
+
+    printf("--- Attribute Parsed OK ---\n");
 }
 
 void parse_Scenario(){
+    printf("\nParsing Scenario...\n\n");
     if(!match("IDENTIFIER")){
         parseError("///"); //expects an "Identifier"
     } 
     printf(" -> Consumed SCENARIO.\n");
+    printf("--- Scenario Parsed OK ---\n");
 }
 
 void parse_ChoiceBlock(){
-    if(!match("INDENT")){
+    skip_noise_tokens();
+
+     printf("\nParsing Choice Block...\n\n");
+    if(check("INDENT")){
+        match("INDENT");
+        printf(" -> Consumed INDENT.\n");
+        
+        parse_ChoiceList();
+
+        if(!match("DEDENT"))
+            printf(" -> Consumed DEDENT.\n");
+        else parseError("///"); //expects an DEDENT      
+    } else {
         parseError("///"); //expects an "INDENT"
     }
-    printf(" -> Consumed INDENT.\n");
-
-    parse_ChoiceList();
-
-    if(!match("DEDENT")){
-        parseError("///"); //expects an "DEDENT"
-    }
-    printf(" -> Consumed DEDENT.\n");
+   
+    printf("--- Choice Block Parsed OK ---\n");
 }
 
 //<choice_list> ::=  { “[“ <string_literal> ":" <literal> “]” “,” "NEWLINE"}
 void parse_ChoiceList() {
-    printf("Parsing Choice List...\n");
+    printf("\nParsing Choice List...\n\n");
 
-    // Repeated zero or more times
-    while (!isAtEnd() && check("LBRACKET")) { 
-        advance(); 
-        printf(" -> Consumed '['\n");
+    // Keep parsing until we reach a token that is not part of a choice
+    while(!isAtEnd() && check("LBRACKET")) { // Each choice starts with “[“
+        if(match("LBRACKET")) {
+            printf(" -> Consumed '['\n");
 
-        if (!match("STRING")) {
-            parseError("string literal for choice text");
+            // Expect string literal
+            if(match("STRING")) {
+                printf(" -> Consumed STRING_LITERAL: %s\n", get_currentToken()->lexeme);
+            } else {
+                parseError("STRING_LITERAL");
+            }
+
+            // Expect colon
+            if(match("COLON")) {
+                printf(" -> Consumed ':'\n");
+            } else {
+                parseError(":");
+            }
+
+            // Expect literal
+            if(match("STRING")) {
+                printf(" -> Consumed LITERAL: %s\n", get_currentToken()->lexeme);
+            } else {
+                parseError("LITERAL");
+            }
+
+            // Expect closing bracket
+            if(match("RBRACKET")) {
+                printf(" -> Consumed ']'\n");
+            } else {
+                parseError("]");
+            }
+
+            // Expect comma
+            if(match("COMMA")) {
+                printf(" -> Consumed ','\n");
+            } else {
+                parseError(",");
+            }
+
+            // Expect newline
+            if(match("NEWLINE")) {
+                printf(" -> Consumed NEWLINE\n");
+            } else {
+                parseError("NEWLINE");
+            }
         }
-        printf(" -> Consumed choice text (STRING)\n");
-
-
-        if (!match("COLON")) { 
-            parseError("':' after choice text");
-        }
-        printf(" -> Consumed ':'\n");
-
-        // <literal> (assume INTEGER or STRING for now)
-        if (!(match("INTEGER") || match("STRING"))) {
-            parseError("///"); //expects a literal values for choice
-        }
-        printf(" -> Consumed choice value (literal)\n");
-
-       
-        if (!match("RBRACKET")) { 
-            parseError("']' to close choice");
-        }
-        printf(" -> Consumed ']'\n");
-
-   
-        if (!match("COMMA")) {
-            parseError("',' after choice");
-        }
-        printf(" -> Consumed ','\n");
-
-  
-        if (!match("NEWLINE")) {
-            parseError("NEWLINE after choice");
-        }
-        printf(" -> Consumed NEWLINE\n");
     }
 
-    printf("--- Choice List Parsed ---\n");
+    printf("--- Choice List Parsed OK ---\n");
 }
