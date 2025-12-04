@@ -21,7 +21,6 @@ void parse_AssignmentOperator();
 void parse_Program();
 void parse_IDList();
 void parse_AttributeAccess();
-void parse_BooleanLiteral();
 void parse_Literal();
 void parse_Expression();
 void parse_AndExpr();
@@ -190,7 +189,11 @@ void parse_Literal(){
 
     // Booleans
     if (check("TRUE") || check("FALSE")) {
-        parse_BooleanLiteral();
+        if (check("TRUE")){
+            if(!match("TRUE")) parseError("TRUE");
+        }else{
+            if(!match("FALSE")) parseError("FALSE");
+        }
         return;
     }
 
@@ -383,7 +386,7 @@ void parse_Factor() {
 /* ---- ASSIGNMENT STATEMENT ---- */
 void parse_AssignmentStatement()
 {
-    printf("Parsing Assignment Statement...\n");
+    printf("Enter <assignment_stmt> \n");
  
     parse_AttributeAccess();
     parse_AssignmentOperator();
