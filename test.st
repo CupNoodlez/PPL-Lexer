@@ -1,1 +1,2 @@
-andrea %= 10
+
+    andrea = "andrea"
