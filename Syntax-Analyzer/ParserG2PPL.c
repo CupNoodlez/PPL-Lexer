@@ -17,6 +17,7 @@ void parseError(const char* expected);
 void skip_noise_tokens();
 void parse_AssignmentStatement();
 void parse_Program();
+void parse_IDList();
 
 int main() {
     char filetoken_name[256];
@@ -37,12 +38,13 @@ int main() {
     printf("=== Parser Syntax Analysis Test ===\n");
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
-    parse_Program(); 
+    printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+    parse_IDList(); 
     
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
     } else {
-        printf("\n✓ SUCCESS: All statements consumed and stream is at EOF.\n");
+        printf("\nSUCCESS: All statements consumed and stream is at EOF.\n");
     }
 
     free(tokens);
@@ -71,6 +73,7 @@ void advance() {
 bool match(const char* token_name) {
     if (check(token_name)) {
         advance();
+        printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
         return true;
     }
     return false;
@@ -132,3 +135,23 @@ void parse_Program() {
     }
 }
 
+void parse_IDList(){
+    printf("Enter <id_list>\n");
+
+    if(!match("IDENTIFIER")){
+        parseError("an IDENTIFIER");
+    }
+
+    while (check("COMMA"))
+    {
+        if(!match("COMMA")){
+            parseError("a COMMA");
+        }
+        if(!match("IDENTIFIER")){
+            parseError("an IDENTIFIER");
+        }
+    }
+
+    skip_noise_tokens();
+    printf("<id_list> (done)\n");
+}
