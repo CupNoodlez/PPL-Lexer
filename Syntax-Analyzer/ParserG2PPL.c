@@ -10,6 +10,7 @@ int current_pos = 0;
 
 bool isAtEnd();
 Token* currentToken();
+Token* nextToken();
 bool check(const char* token_name);
 void advance();
 bool match(const char* token_name);
@@ -57,9 +58,14 @@ bool isAtEnd() {
     return current_pos >= token_count;
 }
 
-Token* get_currentToken() {
+Token* currentToken() {
     if (isAtEnd()) return NULL;
     return &tokens[current_pos];
+}
+
+Token* nextToken() {
+    if (current_pos + 1 >= token_count) return NULL;
+    return &tokens[current_pos + 1];
 }
 
 bool check(const char* token_name) {  
@@ -88,7 +94,7 @@ void parseError(const char* expected) {
         fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
         fprintf(stderr, "Unexpected end of input. Expected '%s'.\n", expected);
     } else {
-        Token* curr = get_currentToken();
+        Token* curr = currentToken();
         fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
         fprintf(stderr, "Line %d: Expected '%s', but found token [%s] with lexeme '%s'.\n", 
                 curr->lineNumber, expected, curr->token_name, curr->lexeme);
@@ -104,33 +110,11 @@ void skip_noise_tokens() {
     }
 }
 
-void parse_AssignmentStatement() {
-    printf("Parsing Assignment Statement...\n");
-    
-    if (!match("IDENTIFIER")) {
-        parseError("IDENTIFIER (for variable token_name)");
-    }
-    printf(" -> Consumed IDENTIFIER.\n");
-
-    if (!(match("ASSIGN") || match("PLUS_ASSIGN") || match("MINUS_ASSIGN") ||
-          match("MULT_ASSIGN") || match("DIV_ASSIGN") || match("MOD_ASSIGN"))) {
-        parseError("an assignment operator (=, +=, etc.)");
-    }
-    printf(" -> Consumed Assignment Operator.\n");
-
-    if (!match("INTEGER")) {
-        parseError("INTEGER (for value)");
-    }
-    printf(" -> Consumed INTEGER.\n");
-    
-    printf("--- Assignment Statement Parsed OK ---\n");
-}
-
 void parse_Program() {
     skip_noise_tokens();
     
     while (check("IDENTIFIER")) {
-        parse_AssignmentStatement();
+        // parse_AssignmentStatement();
         skip_noise_tokens();
     }
     
@@ -148,9 +132,7 @@ void parse_IDList(){
 
     while (check("COMMA"))
     {
-        if(!match("COMMA")){
-            parseError("a COMMA");
-        }
+        match("COMMA");
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER");
         }
