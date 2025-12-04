@@ -17,8 +17,8 @@ bool match(const char* token_name);
 void parseError(const char* expected);
 void skip_noise_tokens();
 void parse_AssignmentStatement();
+void parse_AssignmentOperator();
 void parse_Program();
-
 void parse_InputStatement();
 void parse_PromptContent();
 void parse_TargetID();
@@ -131,27 +131,51 @@ void skip_noise_tokens() {
     }
 }
 
-void parse_AssignmentStatement() {
-    printf("\nEnter <assignment_stmt>...\n");
-    
-    if (!match("IDENTIFIER")) {
-        parseError("IDENTIFIER (for variable token_name)");
-    }
-    printf(" -> Consumed IDENTIFIER.\n");
+void parse_AssignmentStatement()
+{
+    printf("\nEnter <assignment_stmt> \n");
+ 
+    parse_AttributeAccess();
+    parse_AssignmentOperator();
+    parse_Expression();
+ 
+    printf("<assignment_statement> (done)\n");
+}
 
-    if (!(match("ASSIGN") || match("PLUS_ASSIGN") || match("MINUS_ASSIGN") ||
-          match("MULT_ASSIGN") || match("DIV_ASSIGN") || match("MOD_ASSIGN"))) {
-        parseError("an assignment operator (=, +=, etc.)");
+void parse_AssignmentOperator()
+{
+    printf("\nEnter <assignment_operator>\n");
+ 
+    if (match("ASSIGN"))
+    {
+        printf("-> ASSIGN\n");
     }
-    printf(" -> Consumed Assignment Operator.\n");
-
-    //parseLiteral ata to pero parang ginagawa na naman na
-    if (!(match("INTEGER") || match("STRING") || match("FLOAT") || match("CHAR") )){
-        parseError("must be literal"); //expect a literal
+    else if (match("PLUS_ASSIGN"))
+    {
+        printf("-> PLUS_ASSIGN\n");
     }
-    printf(" -> Consumed LITERAL.\n");
-    
-    printf("<assignment_stmt> (done) \n");
+    else if (match("MINUS_ASSIGN"))
+    {
+        printf("-> MINUS_ASSIGN\n");
+    }
+    else if (match("MULT_ASSIGN"))
+    {
+        printf("-> MULT_ASSIGN\n");
+    }
+    else if (match("DIV_ASSIGN"))
+    {
+        printf("-> DIV_ASSIGN\n");
+    }
+    else if (match("MOD_ASSIGN"))
+    {
+        printf("-> MOD_ASSIGN\n");
+    }
+    else
+    {
+        parseError("assignment operator (=, +=, -=, *=, /=, %=)");
+    }
+ 
+    printf("<assignment_operator> done\n");
 }
 
 void parse_Program() {
@@ -477,7 +501,7 @@ void parse_ChoiceList() {
 }
 
 void parse_IDList(){
-    printf("Enter <id_list>\n");
+    printf("\nEnter <id_list>\n");
 
     if(!match("IDENTIFIER")){
         parseError("an IDENTIFIER");
@@ -497,7 +521,7 @@ void parse_IDList(){
 
 
 void parse_BooleanLiteral(){
-    printf("Enter <boolean_literal>\n");
+    printf("\nEnter <boolean_literal>\n");
 
     if (!check("TRUE") && !check("FALSE")){
         parseError("Boolean Literal");
@@ -510,7 +534,7 @@ void parse_BooleanLiteral(){
 
 // ...existing code...
 void parse_Literal(){
-    printf("Enter <literal>\n");
+    printf("\nEnter <literal>\n");
 
     // Booleans
     if (check("TRUE") || check("FALSE")) {
@@ -550,7 +574,7 @@ void parse_Literal(){
 /* ---- EXPRESSION PARSING ---- */
  
 void parse_Expression() {
-    printf("Enter <expression> \n");
+    printf("\nEnter <expression> \n");
  
     parse_AndExpr();
  
@@ -566,7 +590,7 @@ void parse_Expression() {
 }
  
 void parse_AndExpr() {
-    printf("Enter <and_expr> \n");
+    printf("\nEnter <and_expr> \n");
  
     parse_NotExpr();
    
@@ -582,7 +606,7 @@ void parse_AndExpr() {
 }
  
 void parse_NotExpr() {
-    printf("Enter <not_expr> \n");
+    printf("\nEnter <not_expr> \n");
  
     while (check("NOT")) {
         if(!match("NOT")){
@@ -597,7 +621,7 @@ void parse_NotExpr() {
 }
  
 void parse_RelationalExpr() {
-    printf("Enter <relational_expr> \n");
+    printf("\nEnter <relational_expr> \n");
  
     parse_ArithmeticExpr();
  
@@ -613,7 +637,7 @@ void parse_RelationalExpr() {
 }
  
 void parse_ArithmeticExpr() {
-    printf("Enter <arithmetic_expr> \n");
+    printf("\nEnter <arithmetic_expr> \n");
  
     parse_Term();
  
@@ -629,7 +653,7 @@ void parse_ArithmeticExpr() {
 }
  
 void parse_Term() {
-    printf("Enter <term> \n");
+    printf("\nEnter <term> \n");
  
     parse_PowerExpr();
  
@@ -645,7 +669,7 @@ void parse_Term() {
 }
  
 void parse_PowerExpr() {
-    printf("Enter <power_expr> \n");
+    printf("\nEnter <power_expr> \n");
  
     parse_UnaryExpr();
  
@@ -661,7 +685,7 @@ void parse_PowerExpr() {
 }
  
 void parse_UnaryExpr() {
-    printf("Enter <unary_expr> \n");
+    printf("\nEnter <unary_expr> \n");
  
     while(check("MINUS")){
         if(!match("MINUS")){
@@ -676,7 +700,7 @@ void parse_UnaryExpr() {
 }
  
 void parse_Factor() {
-    printf("Enter <factor> \n");
+    printf("\nEnter <factor> \n");
  
     if (match("LPAREN")) {
         parse_Expression();
