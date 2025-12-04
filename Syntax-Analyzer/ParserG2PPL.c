@@ -25,13 +25,27 @@ void parse_TargetID();
 void parse_AttributeAccess();
 void parse_ChoiceBlock();
 void parse_ChoiceList();
-void parse_AttributeAccess();
 void parse_Attribute();
 void parse_Scenario();
 void parse_OutputStatement();
 void parse_OutputBody();
 void parse_ContentItem();
 void parse_OutputBlock();
+void parse_Content();
+void parse_ConcatElement();
+void parse_Concat();
+void parse_IDList();
+void parse_BooleanLiteral();
+void parse_Literal();
+void parse_Expression();
+void parse_AndExpr();
+void parse_NotExpr();
+void parse_RelationalExpr();
+void parse_ArithmeticExpr();
+void parse_Term();
+void parse_PowerExpr();
+void parse_UnaryExpr();
+void parse_Factor();
 
 int main() {
     char filetoken_name[256];
@@ -90,6 +104,7 @@ bool match(const char* token_name) {
             printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
         }
         
+        
         return true;
     }
     return false;
@@ -117,7 +132,7 @@ void skip_noise_tokens() {
 }
 
 void parse_AssignmentStatement() {
-    printf("Parsing Assignment Statement...\n\n");
+    printf("\nEnter <assignment_stmt>...\n");
     
     if (!match("IDENTIFIER")) {
         parseError("IDENTIFIER (for variable token_name)");
@@ -136,11 +151,12 @@ void parse_AssignmentStatement() {
     }
     printf(" -> Consumed LITERAL.\n");
     
-    printf("--- Assignment Statement Parsed OK ---\n");
+    printf("<assignment_stmt> (done) \n");
 }
 
 void parse_Program() {
     skip_noise_tokens();
+    printf("\nEnter <program>...\n");
     
     while (!isAtEnd()) {
         
@@ -174,7 +190,7 @@ void parse_Program() {
 
 void parse_OutputStatement() {
     skip_noise_tokens();
-    printf("\nParsing Output Statement...\n\n");
+     printf("\nEnter <output_stmt>...\n");
 
     // Parse output keyword
     if(check("NARRATE") || check("DIALOGUE") || check("SHOW")) {
@@ -187,7 +203,6 @@ void parse_OutputStatement() {
 
     if(check("IDENTIFIER")) {  //optional attribute access
         parse_TargetID();
-        printf(" -> Parsed Attribute Access\n");
     }
 
     if(match("COLON")) {
@@ -198,12 +213,12 @@ void parse_OutputStatement() {
 
     parse_OutputBody();
 
-    printf("--- Output Statement Parsed OK ---\n");
+    printf("<outuput_stmt> (done) \n");
 }
 
 void parse_OutputBody(){
 
-    printf("\nParsing Output Body...\n\n");
+    printf("\nEnter <output_body>...\n");
    if(check("INDENT")){
         parse_OutputBlock();
    } 
@@ -214,11 +229,11 @@ void parse_OutputBody(){
         parseError("///"); //expect an indent, string, or identifier
    }
 
-    printf("--- Output Body Parsed OK ---\n");
+    printf("<output_body> (done) \n");
 }
 
 void parse_OutputBlock(){
-    printf("\nParsing Output Block...\n\n");
+    printf("\nEnter <output_block>...\n");
     if(!match("INDENT")){
         parseError("///"); //expect indent
     }
@@ -231,30 +246,50 @@ void parse_OutputBlock(){
     }
     printf(" -> Consumed DEDENT\n");
 
-    printf("--- Output Block Parsed OK ---\n");
+    printf("<output_block> (done) \n");
     
 }
 
+
 void parse_ContentItem(){
-    printf("\nParsing Content Item...\n\n");
-    if(match("STRING")){
-        printf(" -> Consumed STRING\n");
-    } 
-    else if (check("IDENTIFIER")){
-        parse_AttributeAccess();
-    } 
-    else {
-        parseError("STRING or IDENTIFIER"); //expects a string or identifier
+    printf("\nEnter <content_item>...\n");
+
+    parse_Concat();
+
+    printf("<content_item> (done) \n");
+}
+
+
+void parse_Concat(){
+    printf("\nEnter <concat>...\n");
+
+    parse_ConcatElement();
+    while(!isAtEnd() && check("PLUS")){
+        match("PLUS");
+        parse_ConcatElement();
     }
 
-    printf("--- Content Item Parsed OK ---\n");
+    printf("<concat> (done) \n");
 }
+
+void parse_ConcatElement(){
+    printf("\nEnter <concat_element>...\n");
+
+    if(check("IDENTIFIER")){
+        parse_AttributeAccess();
+    } else {
+        parse_Literal();
+    }
+
+    printf("<concant_element> (done) \n");
+}
+
 
 
 void parse_InputStatement(){
 
     skip_noise_tokens();
-    printf("\nParsing Input Statement...\n\n");
+    printf("\nEnter <input_stmt>...\n");
 
 
     if(check("ASK")){
@@ -306,29 +341,28 @@ void parse_InputStatement(){
         parseError("///"); //expects an "AS" keyword
     } 
 
-    printf("--- Input Statement Parsed OK ---\n");
+    printf("<input_stmt> (done) \n");
 }
 
 void parse_TargetID(){
-    printf("\nParsing Target ID...\n\n");
+    printf("\nEnter <target_id>...\n");
     parse_AttributeAccess();
-    printf(" -> Consumed Target_ID.\n");
 
-    printf("--- TargetID Parsed OK ---\n");
+    printf("<target_id> (done) \n");
 }
 
 void parse_PromptContent(){
-    printf("\nParsing Prompt Content...\n\n");
+    printf("\nEnter <prompt_content>...\n");
     if(!match("STRING")){
         parseError("///");
     }
     printf(" -> Consumed STRING.\n");
-    printf("--- Prompt Content Parsed OK ---\n");
+    printf("<prompt_content> (done) \n");
 }
 
 void parse_AttributeAccess() {
 
-    printf("\nParsing Attribute Access...\n\n");
+   printf("\nEnter <attribute_access>...\n");
     // id is ALWAYS required
     if (!match("IDENTIFIER")) {
         parseError("IDENTIFIER");
@@ -344,32 +378,32 @@ void parse_AttributeAccess() {
         printf(" -> Consumed ATTRIBUTE/SCENARIO IDENTIFIER.\n");
     }
 
-    printf("--- Attribute Access Parsed OK ---\n");
+    printf("<attribute_access> (done) \n");
 }
 
 void parse_Attribute(){
-    printf("\nParsing Attribute...\n\n");
+    printf("\nEnter <attribute>...\n");
     if(!match("IDENTIFIER")){
         parseError("///"); //expects an "Identifier"
     } 
     printf(" -> Consumed ATTRIBUTE.\n");
 
-    printf("--- Attribute Parsed OK ---\n");
+    printf("<attribute_id> (done) \n");
 }
 
 void parse_Scenario(){
-    printf("\nParsing Scenario...\n\n");
+    printf("\nEnter <scenario>...\n");
     if(!match("IDENTIFIER")){
         parseError("///"); //expects an "Identifier"
     } 
     printf(" -> Consumed SCENARIO.\n");
-    printf("--- Scenario Parsed OK ---\n");
+    printf("<scenario_id> (done) \n");
 }
 
 void parse_ChoiceBlock(){
     skip_noise_tokens();
 
-     printf("\nParsing Choice Block...\n\n");
+    printf("\nEnter <choice_block>...\n");
     if(check("INDENT")){
         match("INDENT");
         printf(" -> Consumed INDENT.\n");
@@ -383,12 +417,12 @@ void parse_ChoiceBlock(){
         parseError("///"); //expects an "INDENT"
     }
    
-    printf("--- Choice Block Parsed OK ---\n");
+    printf("<choice_block> (done) \n");
 }
 
 //<choice_list> ::=  { “[“ <string_literal> ":" <literal> “]” “,” "NEWLINE"}
 void parse_ChoiceList() {
-    printf("\nParsing Choice List...\n\n");
+    printf("\nEnter <choice_list>...\n");
 
     // Keep parsing until we reach a token that is not part of a choice
     while(!isAtEnd() && check("LBRACKET")) { // Each choice starts with “[“
@@ -439,5 +473,231 @@ void parse_ChoiceList() {
         }
     }
 
-    printf("--- Choice List Parsed OK ---\n");
+    printf("<choice_list> (done) \n");
+}
+
+void parse_IDList(){
+    printf("Enter <id_list>\n");
+
+    if(!match("IDENTIFIER")){
+        parseError("an IDENTIFIER");
+    }
+
+    while (check("COMMA"))
+    {
+        match("COMMA");
+        if(!match("IDENTIFIER")){
+            parseError("an IDENTIFIER");
+        }
+    }
+
+    skip_noise_tokens();
+    printf("<id_list> (done)\n");
+}
+
+
+void parse_BooleanLiteral(){
+    printf("Enter <boolean_literal>\n");
+
+    if (!check("TRUE") && !check("FALSE")){
+        parseError("Boolean Literal");
+    }
+    advance();
+
+    skip_noise_tokens();
+    printf("<boolean_literal> (done)\n");
+}
+
+// ...existing code...
+void parse_Literal(){
+    printf("Enter <literal>\n");
+
+    // Booleans
+    if (check("TRUE") || check("FALSE")) {
+        parse_BooleanLiteral();
+        return;
+    }
+
+    // Numbers
+    if (check("INTEGER") || check("FLOAT")) {
+        if (check("INTEGER")) {
+            if (!match("INTEGER")) parseError("INTEGER");
+        } else {
+            if (!match("FLOAT")) parseError("FLOAT");
+        }
+
+        skip_noise_tokens();
+        printf("<literal> (done)\n");
+        return;
+    }
+
+    // Strings / Chars
+    if (check("STRING") || check("CHAR")) {
+        if (check("STRING")) {
+            if (!match("STRING")) parseError("STRING");
+        } else {
+            if (!match("CHAR")) parseError("CHAR");
+        }
+
+        skip_noise_tokens();
+        printf("<literal> (done)\n");
+        return;
+    }
+
+    parseError("a literal (INTEGER, FLOAT, STRING, CHAR, TRUE, or FALSE)");
+}
+
+/* ---- EXPRESSION PARSING ---- */
+ 
+void parse_Expression() {
+    printf("Enter <expression> \n");
+ 
+    parse_AndExpr();
+ 
+    while (check("OR")) {
+        if (!match("OR")){
+            parseError("OR");
+        }
+        parse_AndExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<expression> (done) \n");
+}
+ 
+void parse_AndExpr() {
+    printf("Enter <and_expr> \n");
+ 
+    parse_NotExpr();
+   
+    while (check("AND")) {
+        if(!match("AND")){
+            parseError("AND");
+        }
+        parse_NotExpr();
+    }
+   
+    skip_noise_tokens();
+    printf("<and_expr> (done) \n");
+}
+ 
+void parse_NotExpr() {
+    printf("Enter <not_expr> \n");
+ 
+    while (check("NOT")) {
+        if(!match("NOT")){
+            parseError("NOT");
+        }
+    }
+   
+    parse_RelationalExpr();
+ 
+    skip_noise_tokens();
+    printf("<not_expr> (done) \n");    
+}
+ 
+void parse_RelationalExpr() {
+    printf("Enter <relational_expr> \n");
+ 
+    parse_ArithmeticExpr();
+ 
+    if ((match("LESS") || match("LESS_EQUAL") || match("GREATER") ||
+        match("GREATER_EQUAL") || match("EQUAL_EQUAL") ||
+        match("NOT_EQUAL") || match("IS"))) {
+            parse_ArithmeticExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<relational_expr> (done) \n");
+ 
+}
+ 
+void parse_ArithmeticExpr() {
+    printf("Enter <arithmetic_expr> \n");
+ 
+    parse_Term();
+ 
+    while(check("PLUS") || check("MINUS")) {
+        if (!(match("PLUS") || match("MINUS"))) {
+            parseError("ADDITIVE_OP");
+        }
+        parse_Term();
+    }
+ 
+    skip_noise_tokens();
+    printf("<arithmetic_expr> (done) \n");
+}
+ 
+void parse_Term() {
+    printf("Enter <term> \n");
+ 
+    parse_PowerExpr();
+ 
+    while(check("MULTIPLY") || check("DIVIDE") || check("MODULUS")) {
+        if (!(match("MULTIPLY") || match("DIVIDE") || match("MODULUS"))){
+            parseError("MULTIPLICATIVE_OP");
+        }
+        parse_PowerExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<term> (done) \n");
+}
+ 
+void parse_PowerExpr() {
+    printf("Enter <power_expr> \n");
+ 
+    parse_UnaryExpr();
+ 
+    while(check("EXPONENT")) {
+        if (!match("EXPONENT")){
+            parseError("'^'");
+        }
+        parse_UnaryExpr();
+    }
+ 
+    skip_noise_tokens();
+    printf("<power_expr> (done) \n");
+}
+ 
+void parse_UnaryExpr() {
+    printf("Enter <unary_expr> \n");
+ 
+    while(check("MINUS")){
+        if(!match("MINUS")){
+            parseError("'-'");
+        }
+    }
+ 
+    parse_Factor();
+ 
+    skip_noise_tokens();
+    printf("<unary_expr> (done) \n");
+}
+ 
+void parse_Factor() {
+    printf("Enter <factor> \n");
+ 
+    if (match("LPAREN")) {
+        parse_Expression();
+        if (!match("RPAREN")){
+            parseError("')");
+        }
+ 
+        skip_noise_tokens();
+        printf("<factor> (done) \n");
+        return;
+    }
+ 
+    if(check("IDENTIFIER")) {
+        parse_AttributeAccess();
+        skip_noise_tokens();
+        printf("<factor> (done) \n");
+        return;
+    }
+ 
+    parse_Literal();
+ 
+    skip_noise_tokens();
+    printf("<factor> (done) \n");
 }
