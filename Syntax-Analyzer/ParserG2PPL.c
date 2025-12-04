@@ -79,6 +79,12 @@ void parse_ConditionalTail();
 void parse_ElifClause();
 void parse_ElseClause();
 
+void parse_IterativeStatement();
+void parse_ForStructure();
+void parse_CollectionSource();
+void parse_LoopVariable();
+void parse_RepeatStructure();
+
 int main() {
     char filetoken_name[256];
     printf("Enter the source filetoken_name to parse: ");
@@ -209,6 +215,7 @@ void parse_StatementList() {
     }
     printf("<statement_list> (done)\n");
 }
+
 void parse_Statement() {
     skip_noise_tokens();
     printf("\nEnter <statement>...\n");
@@ -227,6 +234,9 @@ void parse_Statement() {
         else if (check("IF")) {
             parse_ConditionStatement();
         }
+        else if (check("FOR") || check("REPEAT")) {
+            parse_IterativeStatement();
+        }
         else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
             skip_noise_tokens();
             continue;
@@ -242,7 +252,6 @@ void parse_Statement() {
     printf("<statement> (done) \n");
 }
 
-
 void parse_StatementBlock()
 {
     skip_noise_tokens();
@@ -257,6 +266,7 @@ void parse_StatementBlock()
 
     printf("<statement_block> (done)\n");
 }
+
 void parse_IDList()
 {
     printf("Enter <id_list>\n");
@@ -988,6 +998,7 @@ void parse_ChoiceList() {
     printf("<choice_list> (done) \n");
 }
 /*
+---- CONDITION STATEMENT ----
 <condition_stmt>       ::= "if" <expression> <conditional_tail>
 <conditional_tail>      ::= ":" <statement_block> { <elif_clause> } [ <else_clause> ]
                 | "then" <statement>
@@ -1050,4 +1061,80 @@ void parse_ElseClause(){
 
     parse_StatementBlock();
     printf("<else_clause> (done) \n");
+}
+
+/* LOOP STATEMENT 
+
+<iterative_stmt>        ::= "for" <for_structure> | "repeat" <repeat_structure>
+
+<for_structure>         ::= <loop_variable> "in" <collection_source> ":" <statement_block>
+<collection_source>     ::= <expression> | <output_stmt>
+<loop_variable>         ::= <identifier> | <entity_type>
+
+<repeat_structure>      ::= <expression> "times" ":" <statement_block> | 
+   "until" <expression> ":" <statement_block>
+*/
+
+void parse_IterativeStatement(){
+    printf("\nEnter <iterative_stmt>...\n");
+
+    if (match("FOR"))
+        parse_ForStructure();
+    else if (match("REPEAT"))
+        parse_RepeatStructure();
+
+    printf("<iterative_stmt> (done) \n");
+}
+void parse_ForStructure(){
+    printf("\nEnter <for_structure>...\n");
+
+    parse_LoopVariable();
+
+    if(!match("IN"))
+        parseError("an IN keyword");
+    parse_CollectionSource();
+    if(!match("COLON"))
+        parseError("a COLON");
+    parse_StatementBlock();
+
+    printf("<for_structure> (done) \n");
+}
+void parse_CollectionSource(){
+    printf("\nEnter <collection_source>...\n");
+    if(check("NARRATE") || check("DIALOGUE") || check("SHOW")){
+        parse_OutputStatement();
+    } else {
+        parse_Expression();
+    }
+    printf("<collection_source> (done) \n");
+}
+void parse_LoopVariable(){
+    printf("\nEnter <loop_variable>...\n");
+    match("IDENTIFIER");
+
+    if (check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
+        match(tokens[current_pos].token_name); 
+    } else {
+        parseError("an IDENTIFIER or ENTITY_TYPE");
+    }
+    printf("<loop_variable> (done) \n");
+}
+void parse_RepeatStructure(){
+    printf("\nEnter <repeat_structure>...\n");
+
+    if(match("UNTIL")){
+        parse_Expression();
+        if(!match("COLON"))
+            parseError("a COLON");
+        parse_StatementBlock();
+    } else {
+        parse_Expression();
+        if(!match("TIMES"))
+            parseError("a TIMES keyword");
+        if(!match("COLON"))
+            parseError("a COLON");
+        parse_StatementBlock();
+    }
+
+    printf("<repeat_structure> (done) \n");
 }
