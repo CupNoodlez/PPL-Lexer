@@ -1,2 +1,2 @@
 dialogue hero:  "hello" +  hero_script + "the end" + 1.2 + "true"
-ab = 2
+andrea = andrea
