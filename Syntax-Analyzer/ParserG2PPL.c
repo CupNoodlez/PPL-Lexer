@@ -18,6 +18,7 @@ void skip_noise_tokens();
 void parse_AssignmentStatement();
 void parse_Program();
 void parse_IDList();
+void parse_AttributeAccess();
 
 int main() {
     char filetoken_name[256];
@@ -39,7 +40,7 @@ int main() {
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
     printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
-    parse_IDList(); 
+    parse_AttributeAccess();
     
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
@@ -157,4 +158,21 @@ void parse_IDList(){
 
     skip_noise_tokens();
     printf("<id_list> (done)\n");
+}
+
+void parse_AttributeAccess() {
+    printf("Enter <attribute_access>\n");
+    // id is ALWAYS required
+    if (!match("IDENTIFIER")) {
+        parseError("IDENTIFIER");
+    }
+ 
+    // Optional: .attribute or .scenario
+    if (match("DOT")) {
+        if (!match("IDENTIFIER")) {
+            parseError("ATTRIBUTE or SCENARIO IDENTIFIER");
+        }
+    }
+ 
+    printf("<attribute_access> (done)");
 }
