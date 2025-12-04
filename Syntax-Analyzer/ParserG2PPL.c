@@ -144,38 +144,23 @@ void parse_AssignmentStatement()
 
 void parse_AssignmentOperator()
 {
-    printf("\nEnter <assignment_operator>\n");
+    printf("Enter <assignment_operator>\n");
  
-    if (match("ASSIGN"))
+    if (
+        match("ASSIGN") ||
+        match("PLUS_ASSIGN") ||
+        match("MINUS_ASSIGN") ||
+        match("MULT_ASSIGN") ||
+        match("DIV_ASSIGN") ||
+        match("MOD_ASSIGN"))
     {
-        printf("-> ASSIGN\n");
-    }
-    else if (match("PLUS_ASSIGN"))
-    {
-        printf("-> PLUS_ASSIGN\n");
-    }
-    else if (match("MINUS_ASSIGN"))
-    {
-        printf("-> MINUS_ASSIGN\n");
-    }
-    else if (match("MULT_ASSIGN"))
-    {
-        printf("-> MULT_ASSIGN\n");
-    }
-    else if (match("DIV_ASSIGN"))
-    {
-        printf("-> DIV_ASSIGN\n");
-    }
-    else if (match("MOD_ASSIGN"))
-    {
-        printf("-> MOD_ASSIGN\n");
     }
     else
     {
         parseError("assignment operator (=, +=, -=, *=, /=, %=)");
     }
  
-    printf("<assignment_operator> done\n");
+    printf("Exit <assignment_operator>\n");
 }
 
 void parse_Program() {
