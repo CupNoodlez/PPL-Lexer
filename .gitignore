@@ -6,4 +6,4 @@ TableGen
 tablegen 
 GenerateTable
 testing.st
-
+test.st

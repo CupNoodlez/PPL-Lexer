@@ -90,25 +90,18 @@ Token* lex_all(char* filename, int* token_num) {
             else continue; 
         }
         NEWLINE: {
-            if (!first_line)
+            if (!first_line) {
                 emitToken(tokens, &tokenCount, lexemeIndex, ++cursor, curr_line, "NEWLINE");
-            if (!first_line)
                 curr_line++;
-            first_line = false;
-            beginningSpaces = 0;
-            
-            if (*cursor == '\n') continue;
-            if (*cursor == '\0') {
-                while (peek(&indentationStack) > 0) {
-                    pop(&indentationStack);
-                    emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "DEDENT");
-                }
-                continue;
             }
+            beginningSpaces = 0;
+            first_line = false;
+            if (*cursor == '\n') continue;
             while (*cursor == ' ') {
                 beginningSpaces++;
                 cursor++;
             }
+            if (*cursor == '\n' || *cursor == '\0' || *cursor == '#') continue;
             if (beginningSpaces > peek(&indentationStack)) {
                 push(&indentationStack, beginningSpaces);
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "INDENT");
