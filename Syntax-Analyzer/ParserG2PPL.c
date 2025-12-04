@@ -394,36 +394,50 @@ void parse_AssignmentStatement()
 
 void parse_AssignmentOperator()
 {
-    printf("Enter <assignment_operator>\n");
- 
-    if (match("ASSIGN"))
+   
+    if (check("ASSIGN") ||
+        check("PLUS_ASSIGN") ||
+        check("MINUS_ASSIGN") ||
+        check("MULT_ASSIGN") ||
+        check("DIV_ASSIGN") ||
+        check("MOD_ASSIGN"))
     {
-        printf("-> ASSIGN\n");
+        // Consume exactly one operator
+        advance();
     }
-    else if (match("PLUS_ASSIGN"))
-    {
-        printf("-> PLUS_ASSIGN\n");
-    }
-    else if (match("MINUS_ASSIGN"))
-    {
-        printf("-> MINUS_ASSIGN\n");
-    }
-    else if (match("MULT_ASSIGN"))
-    {
-        printf("-> MULT_ASSIGN\n");
-    }
-    else if (match("DIV_ASSIGN"))
-    {
-        printf("-> DIV_ASSIGN\n");
-    }
-    else if (match("MOD_ASSIGN"))
-    {
-        printf("-> MOD_ASSIGN\n");
-    }
-    else
+    else 
     {
         parseError("assignment operator (=, +=, -=, *=, /=, %=)");
     }
- 
-    printf("<assignment_operator> done\n");
 }
+
+/* ---- DECLARATION STATEMENT ---- */
+void parse_CharacterDeclaration(){
+    printf("Enter <character_declaration>\n");
+
+    if(match("CHARACTER")){
+        parse_IDList();
+    }
+
+}
+
+void parse_AttributeList(){
+    parse_AttributeAccess();
+    if(match("ASSIGN")){
+        
+    }
+
+}
+
+// void parse_AttributeBlock(){
+//     if(match("NEWLINE")){
+//         if(match("INDENT")){
+//             parse
+//             if((match())){
+
+//             }
+//         }
+        
+//     }
+// }
+
