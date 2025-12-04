@@ -171,18 +171,6 @@ void parse_AttributeAccess() {
     printf("<attribute_access> (done)\n");
 }
 
-void parse_BooleanLiteral(){
-    printf("Enter <boolean_literal>\n");
-
-    if (!check("TRUE") && !check("FALSE")){
-        parseError("Boolean Literal");
-    }
-    advance();
-
-    skip_noise_tokens();
-    printf("<boolean_literal> (done)\n");
-}
-
 // ...existing code...
 void parse_Literal(){
     printf("Enter <literal>\n");
