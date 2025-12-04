@@ -1053,7 +1053,7 @@ bool isOperator(char c) {
 }
 
 bool isSeparator(char c) {
-    return isspace(c) || isDelimiter(c) || isOperator(c);
+    return isspace(c) || isDelimiter(c) || isOperator(c) || c == '\0';
 }
 
 void push(Stack *stack, int value) {
