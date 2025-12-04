@@ -20,6 +20,7 @@ void parse_AssignmentStatement();
 void parse_Program();
 void parse_IDList();
 void parse_AttributeAccess();
+void parse_BooleanLiteral();
 
 int main() {
     char filetoken_name[256];
@@ -41,7 +42,7 @@ int main() {
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
 
     printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
-    parse_AttributeAccess();
+    parse_BooleanLiteral();
     
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
@@ -156,5 +157,18 @@ void parse_AttributeAccess() {
         }
     }
  
-    printf("<attribute_access> (done)");
+    skip_noise_tokens();
+    printf("<attribute_access> (done)\n");
+}
+
+void parse_BooleanLiteral(){
+    printf("Enter <boolean_literal>\n");
+
+    if (!check("TRUE") && !check("FALSE")){
+        parseError("Boolean Literal");
+    }
+    advance();
+
+    skip_noise_tokens();
+    printf("<boolean_literal> (done)\n");
 }
