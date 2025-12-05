@@ -305,6 +305,10 @@ Token* lex_all(char* filename, int* token_num) {
         }
         /********************[IDENTIFIERS & KEYWORDS]********************/
         IDENTIFIER: {
+            if (isSeparator(*cursor)) { 
+                emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IDENTIFIER");
+                continue;
+            }
             if (isalnum(*++cursor) || *cursor == '_') goto IDENTIFIER;
             if (isSeparator(*cursor)) { 
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "IDENTIFIER");

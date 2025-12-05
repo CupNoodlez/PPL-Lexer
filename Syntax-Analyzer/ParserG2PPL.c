@@ -52,14 +52,6 @@ void parse_PromptContent();
 void parse_ChoiceBlock();
 void parse_ChoiceList();
 
-void parse_OutputStatement();
-void parse_Content();
-void parse_OutputBody();
-void parse_OutputBlock();
-void parse_ContentItem();
-void parse_Concat();
-void parse_ConcatElement();
-
 
 void parse_InputStatement();
 void parse_TargetID();
@@ -882,6 +874,7 @@ void parse_OutputKey(){
 void parse_OutputBody(){
  
     printf("Enter <output_body>\n");
+    skip_noise_tokens();
    if(check("INDENT")){
         parse_OutputBlock();
    }
@@ -898,17 +891,15 @@ void parse_OutputBody(){
 void parse_OutputBlock(){
     printf("Enter <output_block>\n");
     if(!match("INDENT")){
-        parseError("an INDENT"); //expect indent
+        parseError("an INDENT"); 
     }
-    printf(" -> Consumed INDENT\n");
  
     parse_ContentItem();
- 
+    skip_noise_tokens();  
+
     if(!match("DEDENT")){
-        parseError("a DEDENT"); // expect dedent
-    }
-    printf(" -> Consumed DEDENT\n");
- 
+        parseError("a DEDENT"); 
+    }        
     printf("<output_block> (done) \n");
    
 }
@@ -1184,10 +1175,8 @@ void parse_CollectionSource(){
 }
 void parse_LoopVariable(){
     printf("\nEnter <loop_variable>\n");
-    match("IDENTIFIER");
-
-    if (check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
-        match(tokens[current_pos].token_name); 
+    if (match("IDENTIFIER")) {
+    } else if (match("CHARACTER") || match("SCENE") || match("TEMPLATE")) {
     } else {
         parseError("an IDENTIFIER or ENTITY_TYPE");
     }
