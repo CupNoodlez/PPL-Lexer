@@ -18,8 +18,17 @@ A simple lexer & parser for a story-telling focused programming language written
   ```sh
   make clean
   ```
+## Notes
+- **Indentation must use spaces, not tabs (`\t`).**  
+  The lexer only counts space characters for indentation. Tabs will cause incorrect INDENT/DEDENT tokens.
+  
+  To check for tabs in your source file:
+  ```bash
+  cat -A yourfile.st
+  ```
+  Tabs appear as `^I`. If found, replace them with spaces.
 
-All commands should be run from the project root directory.
+- All commands should be run from the project root directory.
 
 
 
