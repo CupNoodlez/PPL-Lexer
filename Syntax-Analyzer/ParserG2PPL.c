@@ -8,6 +8,9 @@ Token *tokens;
 int token_count;
 int current_pos = 0;
 
+// Panic-mode state
+static bool recovering = false;
+
 bool isAtEnd();
 Token *currentToken();
 Token *nextToken();
@@ -16,6 +19,10 @@ void advance();
 bool match(const char *token_name);
 void parseError(const char *expected);
 void skip_noise_tokens();
+
+// NEW: recovery helper
+static void recover_to_newline(void);
+
 void parse_AssignmentStatement();
 void parse_Program();
 void parse_StatementList();
@@ -153,7 +160,6 @@ bool match(const char* token_name) {
         if(!isAtEnd()){
             printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
         }
-        
         return true;
     }
     return false;
@@ -173,17 +179,43 @@ void parseError(const char *expected)
         fprintf(stderr, "Line %d: Expected '%s', but found token [%s] with lexeme '%s'.\n",
                 curr->lineNumber, expected, curr->token_name, curr->lexeme);
     }
+    fprintf(stderr, "Attempting panic-mode recovery to next NEWLINE...\n");
     fprintf(stderr, "------------------\n");
-    free(tokens);
-    exit(1);
+
+    // PANIC MODE: do not exit; resync and continue
+    recover_to_newline();
 }
 
+// Recover by skipping until NEWLINE; consume exactly one NEWLINE and resume
+static void recover_to_newline(void)
+{
+    recovering = true;
+
+    while (!isAtEnd() && !check("NEWLINE")) {
+        advance();
+    }
+
+    // Consume exactly one NEWLINE to start next statement cleanly
+    if (check("NEWLINE")) {
+        advance();
+        if(!isAtEnd()){
+            printf("Recovered. Next token is: %s  Next lexeme is: %s\n",
+                   tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        }
+    }
+
+    recovering = false;
+}
+
+// Optional: keep skipping noise when not recovering
 void skip_noise_tokens()
 {
     while (check("COMMENT") || check("COMMENT_MULTI") || check("NEWLINE"))
     {
         advance();
-        printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        if(!isAtEnd()){
+            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+        }
     }
 }
 
@@ -306,7 +338,6 @@ void parse_AttributeAccess()
     printf("<attribute_access> (done)\n");
 }
 
-// ...existing code...
 void parse_Literal()
 {
     printf("Enter <literal>\n");
