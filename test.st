@@ -4,6 +4,12 @@ start
 ask Elio "What is your name?" as name
 
 
+# ITERATIVE
+repeat until health <= 0:
+    damage = damage + 5
+    health = health - damage
+    show narrator: health
+
 # OUTPUT
 narrate: "The castle gates open slowly"
 narrate hero.name: "The hero approaches the castle"
@@ -56,6 +62,11 @@ ready = (hp > 0 and stamina > 10) or is_awake
 # bool with arithmetic
 active = value > 10 and count % 2 == 0
 
+#ITERATIVE
+for hero in party:
+  show hero: "Ready for battle!"
+  dialogue:
+    "Let's go!"
 
 # CONDITIONAL STATEMENT
 
