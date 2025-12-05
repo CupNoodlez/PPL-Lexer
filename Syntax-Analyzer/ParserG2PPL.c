@@ -33,13 +33,14 @@ void parse_Term();
 void parse_PowerExpr();
 void parse_UnaryExpr();
 void parse_Factor();
-// void parse_DeclarationStatement();
 
-// void parse_CharacterDeclaration();
-
-// void parse_SceneDeclaration();
-
-// void parse_TemplateDeclaration();
+void parse_DeclarationStatement();
+void parse_CharacterDeclaration();
+void parse_ScenesBlock();
+void parse_SceneDeclaration();
+void parse_SceneEntry();
+void parse_SceneList();
+void parse_TemplateDeclaration();
 
 void parse_AttributeBlock();
 
@@ -67,6 +68,7 @@ void parse_ChoiceBlock();
 void parse_ChoiceList();
 
 void parse_OutputStatement();
+void parse_OutputKey();
 void parse_Content();
 void parse_OutputBody();
 void parse_OutputBlock();
@@ -96,11 +98,11 @@ int main() {
         printf("Lexing failed.\n");
         return 1;
     }
-    // test: print all tokens
-    for (int i = 0; i < token_count; i++) {
-        printf("Token %d: token_name='%s', Lexeme='%s', Line=%d\n",
-            i + 1, tokens[i].token_name, tokens[i].lexeme, tokens[i].lineNumber);
-    }
+    // // test: print all tokens
+    // for (int i = 0; i < token_count; i++) {
+    //     printf("Token %d: token_name='%s', Lexeme='%s', Line=%d\n",
+    //         i + 1, tokens[i].token_name, tokens[i].lexeme, tokens[i].lineNumber);
+    // }
 
     printf("=== Parser Syntax Analysis Test ===\n");
     printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
@@ -189,6 +191,7 @@ void skip_noise_tokens()
     while (check("COMMENT") || check("COMMENT_MULTI") || check("NEWLINE"))
     {
         advance();
+        printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
     }
 }
 
@@ -220,7 +223,7 @@ void parse_Statement() {
     skip_noise_tokens();
     printf("\nEnter <statement>...\n");
    
-    while (!isAtEnd()) {
+    while (!check("END") && !check("DEDENT")) {
        
         if (check("IDENTIFIER")) {
             parse_AssignmentStatement();
@@ -237,6 +240,9 @@ void parse_Statement() {
         else if (check("FOR") || check("REPEAT")) {
             parse_IterativeStatement();
         }
+        else if(check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
+            parse_DeclarationStatement();
+        }
         else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
             skip_noise_tokens();
             continue;
@@ -245,10 +251,7 @@ void parse_Statement() {
              parseError("an IDENTIFIER or EOF (unhandled statement token_name)");
         }  
     }
- 
-    while (check("DEDENT") || check("NEWLINE")) {
-        advance();
-    }
+
     printf("<statement> (done) \n");
 }
 
@@ -574,142 +577,71 @@ void parse_AssignmentStatement()
 }
 
 /* ---- DECLARATION STATEMENT ---- */
-// void parse_DeclarationStatement()
-// {
+void parse_DeclarationStatement()
+{
 
-//     printf("Enter <declaration_stmt>\n");
+    printf("Enter <declaration_stmt>\n");
 
-//     if (check("CHARACTER"))
-//     {
-//         parse_CharacterDeclaration();
-//     }
-//     else if (check("SCENE"))
-//     {
-//         parse_SceneDeclaration();
-//     }
-//     else if (check("TEMPLATE"))
-//     {
-//         parse_TemplateDeclaration();
-//     }
-//     else
-//     {
-//         parseError("Expected 'character', 'scene', or 'template'");
-//     }
-//     printf("Exit <declaration_stmt>\n");
-// }
+    if (check("CHARACTER"))
+    {
+        parse_CharacterDeclaration();
+    }
+    else if (check("SCENE"))
+    {
+        parse_SceneDeclaration();
+    }
+    else if (check("TEMPLATE"))
+    {
+        parse_TemplateDeclaration();
+    }
+    else
+    {
+        parseError("Expected 'character', 'scene', or 'template'");
+    }
+    printf("<declaration_stmt> (done)\n");
+}
 
-// void parse_CharacterDeclaration()
-// {
-//     printf("Enter <character_decl>\n");
 
-//     // 1. Consume "character"
-//     if (!match("CHARACTER"))
-//     {
-//         parseError("Expected 'character'");
-//         return;
-//     }
+void parse_TemplateDeclaration()
+{
+    printf("Enter <template_decl>\n");
 
-//     // 2. Consume the first 'id' (Common to both rules)
-//     parse_IDList();
+    match("TEMPLATE");
+    match("IDENTIFIER");
 
-//     if (match("COLON"))
-//     {
-//     }
+    // Parse Parameters: "(" <param> {"," <param>} ")"
+    if (match("LPAREN"))
+    {
+        if(!match("IDENTIFIER")){
+            parseError("IDENTIFIER");
+        }
 
-//     printf("Exit <character_decl>\n");
-// }
+        // Handle EBNF curly braces { "," <param> } using a while loop
+        while (check("COMMA"))
+        {
+            match("COMMA");
+            if(!match("IDENTIFIER")){
+            parseError("IDENTIFIER");
+            }
+        }
 
-// void parse_SceneDeclaration()
-// {
-//     printf("Enter <scene_decl>\n");
+        if (!match("RPAREN"))
+            parseError(")");
+    }
+    else
+    {
+        parseError("( after template ID");
+    }
 
-//     if (match("SCENE"))
-//     {
-//         if (match("ID"))
-//         {
-//             if (match("COLON"))
-//             {
-//                 parse_ScenesBlock();
-//             }
-//             else
-//             {
-//                 parseError("Expected ':' after scene ID");
-//             }
-//         }
-//         else
-//         {
-//             parseError("Expected identifier for scene");
-//         }
-//     }
+    if (!match("COLON"))
+        parseError(":");
 
-//     printf("Exit <scene_decl>\n");
-// }
+    // Parse the blocks required by the grammar
+    parse_StatementBlock(); 
 
-// void parse_TemplateDeclaration()
-// {
-//     printf("Enter <template_decl>\n");
+    printf("<template_decl> (done)\n");
+}
 
-//     match("TEMPLATE");
-//     match("ID");
-
-//     // Parse Parameters: "(" <param> {"," <param>} ")"
-//     if (match("LPAREN"))
-//     {
-//         // Parse first param (assuming parse_Param exists)
-//         parse_Param();
-
-//         // Handle EBNF curly braces { "," <param> } using a while loop
-//         while (strcmp(currentToken, "COMMA") == 0)
-//         {
-//             match("COMMA");
-//             parse_Param();
-//         }
-
-//         if (!match("RPAREN"))
-//             parseError("Expected ')'");
-//     }
-//     else
-//     {
-//         parseError("Expected '(' after template ID");
-//     }
-
-//     if (!match("COLON"))
-//         parseError("Expected ':'");
-
-//     // Parse the blocks required by the grammar
-//     parse_StatementBlock(); // Assuming this function exists from your other code
-//     parse_AttributeBlock();
-
-//     printf("Exit <template_decl>\n");
-// }
-
-// void parse_AttributeBlock()
-// {
-//     printf("Enter <attribute_block>\n");
-
-//     if (match("NEWLINE"))
-//     {
-//         if (match("INDENT"))
-//         {
-
-//             parse_AttributeList();
-
-//             if (!match("DEDENT"))
-//             {
-//                 parseError("Expected 'DEDENT' at end of attribute block");
-//             }
-//         }
-//         else
-//         {
-//             parseError("Expected 'INDENT' after newline");
-//         }
-//     }
-//     else
-//     {
-//         parseError("Expected 'NEWLINE' before attribute block");
-//     }
-//     printf("<attribute_block> (done)\n");
-// }
 
 void parse_AttributeBlock()
 {
@@ -768,38 +700,188 @@ void parse_AttributeList()
     printf("<attribute_list> (done)\n");
 }
 
+// character declaration
+void parse_CharacterDeclaration()
+{
+    printf("Enter <character_decl>\n");
+
+    /* Match 'character' keyword */
+    if (!match("CHARACTER"))
+    {
+        parseError("Expected 'character'");
+    }
+
+    /* Both rules start with an identifier */
+    if (!check("IDENTIFIER"))
+    {
+        parseError("Identifier");
+    }
+
+    /* 
+        Look ahead:
+
+        character id : attribute_block
+        character <id_list>
+
+        If next token after IDENTIFIER is COLON → attribute rule
+    */
+
+    if (check("IDENTIFIER") && (strcmp(nextToken()->token_name, "COMMA")))
+    {
+        /* Rule: character id : <attribute_block> */
+
+        match("IDENTIFIER");   // consume id
+        match("COLON");        // consume ':'
+
+        parse_AttributeBlock();
+    }
+    else
+    {
+        /* Rule: character <id_list> */
+        parse_IDList();        // this consumes IDENTIFIER itself
+    }
+
+    printf("<character_decl> (done)\n");
+}
+
+
+
+
+// ------------- SCENE -----------------------
+void parse_SceneDeclaration()
+{
+    printf("Enter <scene_decl>\n");
+
+    if (match("SCENE"))
+    {
+        parse_AttributeAccess();
+        if (match("COLON"))
+        {
+            parse_ScenesBlock();
+        }
+        else
+        {
+            parseError("Expected ':' after scene ID");
+        }
+    }
+    else
+    {
+        parseError("Expected identifier");
+    }
+
+    printf("<scene_decl> (done)\n");
+}
+
+void parse_SceneEntry()
+{
+    printf("Enter <scene_entry>\n");
+
+    // <scenario>
+    parse_AttributeAccess();
+
+    // must have a comma
+    if (!match("COMMA"))
+        parseError("',' after scenario");
+
+    // must have string literal
+    if (check("STRING"))
+        match("STRING");
+    else if (check("CHAR"))
+        match("CHAR");
+    else
+        parseError("STRING or CHAR literal");
+
+    printf("<scene_entry> (done)\n");
+}
+
+void parse_SceneList()
+{
+    printf("Enter <scene_list>\n");
+
+    /* Parse the first scene entry */
+    parse_SceneEntry();
+
+    /* Continue as long as NEWLINE appears */
+    while (match("NEWLINE"))
+    {
+        /* If DEDENT is the next token, stop the loop (don't consume it) */
+        if (check("DEDENT"))
+        {
+            break;
+        }
+
+        /* Parse the next scene entry */
+        parse_SceneEntry();
+    }
+
+    printf("<scene_list> (done)\n");
+}
+
+void parse_ScenesBlock()
+{
+    printf("Enter <scenes_block>\n");
+
+    /* Must begin with NEWLINE */
+    if (!match("NEWLINE"))
+        parseError("Expected NEWLINE before scenes block");
+
+    /* Must be followed by INDENT */
+    if (!match("INDENT"))
+        parseError("Expected INDENT at start of scenes block");
+
+    /* Now parse the scene list */
+    parse_SceneList();
+
+    /* Must end with DEDENT */
+    if (!match("DEDENT"))
+        parseError("Expected DEDENT after scenes block");
+
+    printf("<scenes_block> (done)\n");
+}
+
 /* ---- OUTPUT STATEMENT ---- */
 void parse_OutputStatement() {
     skip_noise_tokens();
-     printf("\nEnter <output_stmt>...\n");
+     printf("Enter <output_stmt>\n");
  
     // Parse output keyword
-    if(check("NARRATE") || check("DIALOGUE") || check("SHOW")) {
-        if(match("NARRATE")) printf(" -> Consumed NARRATE keyword\n");
-        else if(match("DIALOGUE")) printf(" -> Consumed DIALOGUE keyword\n");
-        else if(match("SHOW")) printf(" -> Consumed SHOW keyword\n");
-    } else {
-        parseError("a NARRATE, DIALOGUE, or SHOW");
-    }
+    parse_OutputKey();
  
     if(check("IDENTIFIER")) {  //optional attribute access
         parse_TargetID();
     }
  
-    if(match("COLON")) {
-        printf(" -> Consumed COLON\n");
-    } else {
+    if(!match("COLON")) {
         parseError("a COLON"); //expects a colon
     }
  
     parse_OutputBody();
  
-    printf("<outuput_stmt> (done) \n");
+    printf("<output_stmt> (done) \n");
+}
+
+void parse_OutputKey(){
+    printf("Enter <output_key>\n");
+
+    if(match("NARRATE")){
+        printf("<output_key> (done)\n");
+        return;
+    }
+    if(match("DIALOGUE")){
+        printf("<output_key> (done)\n");
+        return;   
+    }
+    if(match("SHOW")){
+        printf("<output_key> (done)\n");
+        return;
+    }
+
+    parseError("NARRATE, DIALOGUE, or SHOW keyword");
 }
  
 void parse_OutputBody(){
  
-    printf("\nEnter <output_body>...\n");
+    printf("Enter <output_body>\n");
    if(check("INDENT")){
         parse_OutputBlock();
    }
@@ -814,7 +896,7 @@ void parse_OutputBody(){
 }
  
 void parse_OutputBlock(){
-    printf("\nEnter <output_block>...\n");
+    printf("Enter <output_block>\n");
     if(!match("INDENT")){
         parseError("an INDENT"); //expect indent
     }
@@ -833,7 +915,7 @@ void parse_OutputBlock(){
  
  
 void parse_ContentItem(){
-    printf("\nEnter <content_item>...\n");
+    printf("Enter <content_item>...\n");
  
     parse_Concat();
  
@@ -842,7 +924,7 @@ void parse_ContentItem(){
  
  
 void parse_Concat(){
-    printf("\nEnter <concat>...\n");
+    printf("Enter <concat>\n");
  
     parse_ConcatElement();
     while(!isAtEnd() && check("PLUS")){
@@ -854,7 +936,7 @@ void parse_Concat(){
 }
  
 void parse_ConcatElement(){
-    printf("\nEnter <concat_element>...\n");
+    printf("Enter <concat_element>\n");
  
     if(check("IDENTIFIER")){
         parse_AttributeAccess();
@@ -870,12 +952,11 @@ void parse_ConcatElement(){
 void parse_InputStatement(){
  
     skip_noise_tokens();
-    printf("\nEnter <input_stmt>...\n");
+    printf("Enter <input_stmt>\n");
  
  
     if(check("ASK")){
         match("ASK");
-        printf(" -> Consumed ASK keyword.\n");
  
         if(check("IDENTIFIER")){
             parse_TargetID();
@@ -886,31 +967,25 @@ void parse_InputStatement(){
         if(!match("AS")){
             parseError(" AS Keyword");  //expect an "as" keyword
         }
-        printf(" -> Consumed AS keyword.\n");
  
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER"); //expect an "identifier"
         }
-        printf(" -> Consumed IDENTIFIER.\n");
  
     } else if (check("CHOICE")){
         match("CHOICE");
-        printf(" -> Consumed CHOICE keyword.\n");
  
         if(!match("AS")){
             parseError("AS Keyword"); //expect an "as" keyword
         }
-        printf(" -> Consumed AS keyword.\n");
  
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER"); //expect an "identifier"
         }
-        printf(" -> Consumed IDENTIFIER.\n");
  
         if(!match("COLON")){
             parseError("a COLON"); //expect a "colon"
         }
-        printf(" -> Consumed COLON.\n");
  
         if(!match("NEWLINE")){
             parseError("a NEWLINE"); //expect a "newLine"
@@ -926,25 +1001,24 @@ void parse_InputStatement(){
 }
  
 void parse_TargetID(){
-    printf("\nEnter <target_id>...\n");
+    printf("Enter <target_id>\n");
     parse_AttributeAccess();
  
     printf("<target_id> (done) \n");
 }
  
 void parse_PromptContent(){
-    printf("\nEnter <prompt_content>...\n");
+    printf("Enter <prompt_content>\n");
     if(!match("STRING")){
         parseError("a STRING_LITERAL");
     }
-    printf(" -> Consumed STRING.\n");
     printf("<prompt_content> (done) \n");
 }
 
 void parse_ChoiceBlock(){
     skip_noise_tokens();
  
-    printf("\nEnter <choice_block>...\n");
+    printf("Enter <choice_block>\n");
     if(check("INDENT")){
         match("INDENT");
         printf(" -> Consumed INDENT.\n");
@@ -963,7 +1037,7 @@ void parse_ChoiceBlock(){
  
 //<choice_list> ::=  { “[“ <string_literal> ":" <literal> “]” “,” "NEWLINE"}
 void parse_ChoiceList() {
-    printf("\nEnter <choice_list>...\n");
+    printf("Enter <choice_list>\n");
  
     if(!match("LBRACKET")){
         parseError("expects a RBRACKET [") ;
@@ -1009,7 +1083,7 @@ void parse_ChoiceList() {
 */
 
 void parse_ConditionStatement(){
-    printf("\nEnter <condition_stmt>...\n");
+    printf("\nEnter <condition_stmt>\n");
  
     if(!match("IF")){
         parseError("an IF keyword"); 
@@ -1021,7 +1095,7 @@ void parse_ConditionStatement(){
 }
 
 void parse_ConditionalTail(){
-    printf("\nEnter <conditional_tail>...\n");
+    printf("\nEnter <conditional_tail>\n");
     if(!match("COLON"))
         parseError("a COLON"); 
 
@@ -1040,7 +1114,7 @@ void parse_ConditionalTail(){
 }
 
 void parse_ElifClause(){
-    printf("\nEnter <elif_clause>...\n");
+    printf("\nEnter <elif_clause>\n");
     if(!match("ELIF")){
         parseError("an ELIF keyword"); 
     } 
@@ -1052,7 +1126,7 @@ void parse_ElifClause(){
     printf("<elif_clause> (done) \n");
 }
 void parse_ElseClause(){
-    printf("\nEnter <else_clause>...\n");
+    printf("\nEnter <else_clause>\n");
     if(!match("ELSE")){
         parseError("an ELSE keyword"); 
     } 
@@ -1076,7 +1150,7 @@ void parse_ElseClause(){
 */
 
 void parse_IterativeStatement(){
-    printf("\nEnter <iterative_stmt>...\n");
+    printf("\nEnter <iterative_stmt>\n");
 
     if (match("FOR"))
         parse_ForStructure();
@@ -1086,7 +1160,7 @@ void parse_IterativeStatement(){
     printf("<iterative_stmt> (done) \n");
 }
 void parse_ForStructure(){
-    printf("\nEnter <for_structure>...\n");
+    printf("\nEnter <for_structure>\n");
 
     parse_LoopVariable();
 
@@ -1100,7 +1174,7 @@ void parse_ForStructure(){
     printf("<for_structure> (done) \n");
 }
 void parse_CollectionSource(){
-    printf("\nEnter <collection_source>...\n");
+    printf("\nEnter <collection_source>\n");
     if(check("NARRATE") || check("DIALOGUE") || check("SHOW")){
         parse_OutputStatement();
     } else {
@@ -1109,7 +1183,7 @@ void parse_CollectionSource(){
     printf("<collection_source> (done) \n");
 }
 void parse_LoopVariable(){
-    printf("\nEnter <loop_variable>...\n");
+    printf("\nEnter <loop_variable>\n");
     match("IDENTIFIER");
 
     if (check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
@@ -1120,7 +1194,7 @@ void parse_LoopVariable(){
     printf("<loop_variable> (done) \n");
 }
 void parse_RepeatStructure(){
-    printf("\nEnter <repeat_structure>...\n");
+    printf("\nEnter <repeat_structure>\n");
 
     if(match("UNTIL")){
         parse_Expression();
