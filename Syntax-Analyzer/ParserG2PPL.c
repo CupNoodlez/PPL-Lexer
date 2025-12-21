@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "../Lexical-Analyzer/LexicalG2PPL.h"
 
+FILE *outputFile;
+
 Token *tokens;
 int token_count;
 int current_pos = 0;
@@ -87,6 +89,12 @@ void parse_LoopVariable();
 void parse_RepeatStructure();
 
 int main() {
+    outputFile = fopen("SyntaxAnalysis.txt", "w");
+    if (outputFile == NULL) {
+        fprintf(stderr, "Error opening SyntaxAnalysis.txt for writing.\n");
+        return 1;
+    }
+
     char filetoken_name[256];
     printf("Enter the source filetoken_name to parse: ");
     scanf("%255s", filetoken_name);
@@ -94,19 +102,20 @@ int main() {
     tokens = lex_all(filetoken_name, &token_count);
     if (tokens == NULL)
     {
-        printf("Lexing failed.\n");
+        fprintf(outputFile, "Lexing failed.\n");
+        fclose(outputFile);
         return 1;
     }
     // // test: print all tokens
     // for (int i = 0; i < token_count; i++) {
-    //     printf("Token %d: token_name='%s', Lexeme='%s', Line=%d\n",
+    //     fprintf(outputFile, "Token %d: token_name='%s', Lexeme='%s', Line=%d\n",
     //         i + 1, tokens[i].token_name, tokens[i].lexeme, tokens[i].lineNumber);
     // }
 
-    printf("=== Parser Syntax Analysis Test ===\n");
-    printf("Tokens loaded: %d. Starting parse.\n\n", token_count);
+    fprintf(outputFile, "=== Parser Syntax Analysis Test ===\n");
+    fprintf(outputFile, "Tokens loaded: %d. Starting parse.\n\n", token_count);
 
-    printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+    fprintf(outputFile, "Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
     parse_Program();
 
     if (!isAtEnd()) {
@@ -114,10 +123,12 @@ int main() {
     }
     else
     {
-        printf("\nSUCCESS: All statements consumed and stream is at EOF.\n");
+        fprintf(outputFile, "\nSUCCESS: All statements consumed and stream is at EOF.\n");
     }
 
+    printf("Parsing complete. See SyntaxAnalysis.txt for details.\n");
     free(tokens);
+    fclose(outputFile);
     return 0;
 }
 
@@ -158,7 +169,7 @@ bool match(const char* token_name) {
     if (check(token_name)) {
         advance();
         if(!isAtEnd()){
-            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+            fprintf(outputFile, "Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
         }
         return true;
     }
@@ -199,7 +210,7 @@ static void recover_to_newline(void)
     if (check("NEWLINE")) {
         advance();
         if(!isAtEnd()){
-            printf("Recovered. Next token is: %s  Next lexeme is: %s\n",
+            fprintf(outputFile, "Recovered. Next token is: %s  Next lexeme is: %s\n",
                    tokens[current_pos].token_name, tokens[current_pos].lexeme);
         }
     }
@@ -214,13 +225,13 @@ void skip_noise_tokens()
     {
         advance();
         if(!isAtEnd()){
-            printf("Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
+            fprintf(outputFile, "Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
         }
     }
 }
 
 void parse_Program() {
-    printf("Enter <program>...\n");
+    fprintf(outputFile, "Enter <program>...\n");
     skip_noise_tokens();
     if(!match("START")){
         parseError("START keyword");
@@ -229,23 +240,23 @@ void parse_Program() {
     if(!match("END")){
         parseError("END keyword");
     }
-    printf("<program> (done)\n");
+    fprintf(outputFile, "<program> (done)\n");
  
 }
 
 void parse_StatementList() {
-    printf("Enter <statement_list>...\n");
+    fprintf(outputFile, "Enter <statement_list>...\n");
     skip_noise_tokens();
     while (!isAtEnd() && !check("END") && !check("DEDENT")) {
         parse_Statement();
         skip_noise_tokens();
     }
-    printf("<statement_list> (done)\n");
+    fprintf(outputFile, "<statement_list> (done)\n");
 }
 
 void parse_Statement() {
     skip_noise_tokens();
-    printf("\nEnter <statement>...\n");
+    fprintf(outputFile, "\nEnter <statement>...\n");
    
     while (!check("END") && !check("DEDENT")) {
        
@@ -276,13 +287,13 @@ void parse_Statement() {
         }  
     }
 
-    printf("<statement> (done) \n");
+    fprintf(outputFile, "<statement> (done) \n");
 }
 
 void parse_StatementBlock()
 {
     skip_noise_tokens();
-    printf("Enter <statement_block>\n");
+    fprintf(outputFile, "Enter <statement_block>\n");
     if (!match("INDENT"))
         parseError("an INDENT");
 
@@ -291,12 +302,12 @@ void parse_StatementBlock()
     if (!match("DEDENT")) 
         parseError("a DEDENT");
 
-    printf("<statement_block> (done)\n");
+    fprintf(outputFile, "<statement_block> (done)\n");
 }
 
 void parse_IDList()
 {
-    printf("Enter <id_list>\n");
+    fprintf(outputFile, "Enter <id_list>\n");
 
     if (!match("IDENTIFIER"))
     {
@@ -313,12 +324,12 @@ void parse_IDList()
     }
 
     skip_noise_tokens();
-    printf("<id_list> (done)\n");
+    fprintf(outputFile, "<id_list> (done)\n");
 }
 
 void parse_AttributeAccess()
 {
-    printf("Enter <attribute_access>\n");
+    fprintf(outputFile, "Enter <attribute_access>\n");
     // id is ALWAYS required
     if (!match("IDENTIFIER"))
     {
@@ -335,12 +346,12 @@ void parse_AttributeAccess()
     }
 
     skip_noise_tokens();
-    printf("<attribute_access> (done)\n");
+    fprintf(outputFile, "<attribute_access> (done)\n");
 }
 
 void parse_Literal()
 {
-    printf("Enter <literal>\n");
+    fprintf(outputFile, "Enter <literal>\n");
 
     // Booleans
     if (check("TRUE") || check("FALSE"))
@@ -372,7 +383,7 @@ void parse_Literal()
                 parseError("FLOAT");
         }
 
-        printf("<literal> (done)\n");
+        fprintf(outputFile, "<literal> (done)\n");
         return;
     }
 
@@ -390,7 +401,7 @@ void parse_Literal()
                 parseError("CHAR");
         }
 
-        printf("<literal> (done)\n");
+        fprintf(outputFile, "<literal> (done)\n");
         return;
     }
 
@@ -401,7 +412,7 @@ void parse_Literal()
 
 void parse_Expression()
 {
-    printf("Enter <expression> \n");
+    fprintf(outputFile, "Enter <expression> \n");
 
     parse_AndExpr();
 
@@ -415,12 +426,12 @@ void parse_Expression()
     }
 
     skip_noise_tokens();
-    printf("<expression> (done) \n");
+    fprintf(outputFile, "<expression> (done) \n");
 }
 
 void parse_AndExpr()
 {
-    printf("Enter <and_expr> \n");
+    fprintf(outputFile, "Enter <and_expr> \n");
 
     parse_NotExpr();
 
@@ -434,12 +445,12 @@ void parse_AndExpr()
     }
 
     skip_noise_tokens();
-    printf("<and_expr> (done) \n");
+    fprintf(outputFile, "<and_expr> (done) \n");
 }
 
 void parse_NotExpr()
 {
-    printf("Enter <not_expr> \n");
+    fprintf(outputFile, "Enter <not_expr> \n");
 
     while (check("NOT"))
     {
@@ -452,12 +463,12 @@ void parse_NotExpr()
     parse_RelationalExpr();
 
     skip_noise_tokens();
-    printf("<not_expr> (done) \n");
+    fprintf(outputFile, "<not_expr> (done) \n");
 }
 
 void parse_RelationalExpr()
 {
-    printf("Enter <relational_expr> \n");
+    fprintf(outputFile, "Enter <relational_expr> \n");
 
     parse_ArithmeticExpr();
 
@@ -469,12 +480,12 @@ void parse_RelationalExpr()
     }
 
     skip_noise_tokens();
-    printf("<relational_expr> (done) \n");
+    fprintf(outputFile, "<relational_expr> (done) \n");
 }
 
 void parse_ArithmeticExpr()
 {
-    printf("Enter <arithmetic_expr> \n");
+    fprintf(outputFile, "Enter <arithmetic_expr> \n");
 
     parse_Term();
 
@@ -488,12 +499,12 @@ void parse_ArithmeticExpr()
     }
 
     skip_noise_tokens();
-    printf("<arithmetic_expr> (done) \n");
+    fprintf(outputFile, "<arithmetic_expr> (done) \n");
 }
 
 void parse_Term()
 {
-    printf("Enter <term> \n");
+    fprintf(outputFile, "Enter <term> \n");
 
     parse_PowerExpr();
 
@@ -507,12 +518,12 @@ void parse_Term()
     }
 
     skip_noise_tokens();
-    printf("<term> (done) \n");
+    fprintf(outputFile, "<term> (done) \n");
 }
 
 void parse_PowerExpr()
 {
-    printf("Enter <power_expr> \n");
+    fprintf(outputFile, "Enter <power_expr> \n");
 
     parse_UnaryExpr();
 
@@ -526,12 +537,12 @@ void parse_PowerExpr()
     }
 
     skip_noise_tokens();
-    printf("<power_expr> (done) \n");
+    fprintf(outputFile, "<power_expr> (done) \n");
 }
 
 void parse_UnaryExpr()
 {
-    printf("Enter <unary_expr> \n");
+    fprintf(outputFile, "Enter <unary_expr> \n");
 
     while (check("MINUS"))
     {
@@ -544,12 +555,12 @@ void parse_UnaryExpr()
     parse_Factor();
 
     skip_noise_tokens();
-    printf("<unary_expr> (done) \n");
+    fprintf(outputFile, "<unary_expr> (done) \n");
 }
 
 void parse_Factor()
 {
-    printf("Enter <factor> \n");
+    fprintf(outputFile, "Enter <factor> \n");
 
     if (match("LPAREN"))
     {
@@ -560,7 +571,7 @@ void parse_Factor()
         }
 
         skip_noise_tokens();
-        printf("<factor> (done) \n");
+        fprintf(outputFile, "<factor> (done) \n");
         return;
     }
 
@@ -568,14 +579,14 @@ void parse_Factor()
     {
         parse_AttributeAccess();
         skip_noise_tokens();
-        printf("<factor> (done) \n");
+        fprintf(outputFile, "<factor> (done) \n");
         return;
     }
 
     parse_Literal();
 
     skip_noise_tokens();
-    printf("<factor> (done) \n");
+    fprintf(outputFile, "<factor> (done) \n");
 }
 
 /* ---- EXPRESSION PARSING ---- */
@@ -583,7 +594,7 @@ void parse_Factor()
 /* ---- ASSIGNMENT STATEMENT ---- */
 void parse_AssignmentStatement()
 {
-    printf("Enter <assignment_stmt> \n");
+    fprintf(outputFile, "Enter <assignment_stmt> \n");
     parse_AttributeAccess();
 
     if (
@@ -596,14 +607,14 @@ void parse_AssignmentStatement()
     }
 
     parse_Expression();
-    printf("<assignment_statement> (done)\n");
+    fprintf(outputFile, "<assignment_statement> (done)\n");
 }
 
 /* ---- DECLARATION STATEMENT ---- */
 void parse_DeclarationStatement()
 {
 
-    printf("Enter <declaration_stmt>\n");
+    fprintf(outputFile, "Enter <declaration_stmt>\n");
 
     if (check("CHARACTER"))
     {
@@ -621,13 +632,13 @@ void parse_DeclarationStatement()
     {
         parseError("Expected 'character', 'scene', or 'template'");
     }
-    printf("<declaration_stmt> (done)\n");
+    fprintf(outputFile, "<declaration_stmt> (done)\n");
 }
 
 
 void parse_TemplateDeclaration()
 {
-    printf("Enter <template_decl>\n");
+    fprintf(outputFile, "Enter <template_decl>\n");
 
     match("TEMPLATE");
     match("IDENTIFIER");
@@ -662,13 +673,13 @@ void parse_TemplateDeclaration()
     // Parse the blocks required by the grammar
     parse_StatementBlock(); 
 
-    printf("<template_decl> (done)\n");
+    fprintf(outputFile, "<template_decl> (done)\n");
 }
 
 
 void parse_AttributeBlock()
 {
-    printf("Enter <attribute_block>\n");
+    fprintf(outputFile, "Enter <attribute_block>\n");
 
     if (!match("NEWLINE"))
     {
@@ -689,11 +700,11 @@ void parse_AttributeBlock()
         parseError("Expected 'DEDENT' at end of attribute block");
     }
 
-    printf("Exit <attribute_block>\n");
+    fprintf(outputFile, "Exit <attribute_block>\n");
 }
 void parse_AttributeList()
 {
-    printf("Enter <attribute_list>\n");
+    fprintf(outputFile, "Enter <attribute_list>\n");
 
     parse_AttributeAccess();
 
@@ -720,13 +731,13 @@ void parse_AttributeList()
         parse_Literal();
     }
 
-    printf("<attribute_list> (done)\n");
+    fprintf(outputFile, "<attribute_list> (done)\n");
 }
 
 // character declaration
 void parse_CharacterDeclaration()
 {
-    printf("Enter <character_decl>\n");
+    fprintf(outputFile, "Enter <character_decl>\n");
 
     /* Match 'character' keyword */
     if (!match("CHARACTER"))
@@ -764,7 +775,7 @@ void parse_CharacterDeclaration()
         parse_IDList();        // this consumes IDENTIFIER itself
     }
 
-    printf("<character_decl> (done)\n");
+    fprintf(outputFile, "<character_decl> (done)\n");
 }
 
 
@@ -773,7 +784,7 @@ void parse_CharacterDeclaration()
 // ------------- SCENE -----------------------
 void parse_SceneDeclaration()
 {
-    printf("Enter <scene_decl>\n");
+    fprintf(outputFile, "Enter <scene_decl>\n");
 
     if (match("SCENE"))
     {
@@ -792,12 +803,12 @@ void parse_SceneDeclaration()
         parseError("Expected identifier");
     }
 
-    printf("<scene_decl> (done)\n");
+    fprintf(outputFile, "<scene_decl> (done)\n");
 }
 
 void parse_SceneEntry()
 {
-    printf("Enter <scene_entry>\n");
+    fprintf(outputFile, "Enter <scene_entry>\n");
 
     // <scenario>
     parse_AttributeAccess();
@@ -814,12 +825,12 @@ void parse_SceneEntry()
     else
         parseError("STRING or CHAR literal");
 
-    printf("<scene_entry> (done)\n");
+    fprintf(outputFile, "<scene_entry> (done)\n");
 }
 
 void parse_SceneList()
 {
-    printf("Enter <scene_list>\n");
+    fprintf(outputFile, "Enter <scene_list>\n");
 
     /* Parse the first scene entry */
     parse_SceneEntry();
@@ -837,12 +848,12 @@ void parse_SceneList()
         parse_SceneEntry();
     }
 
-    printf("<scene_list> (done)\n");
+    fprintf(outputFile, "<scene_list> (done)\n");
 }
 
 void parse_ScenesBlock()
 {
-    printf("Enter <scenes_block>\n");
+    fprintf(outputFile, "Enter <scenes_block>\n");
 
     /* Must begin with NEWLINE */
     if (!match("NEWLINE"))
@@ -859,13 +870,13 @@ void parse_ScenesBlock()
     if (!match("DEDENT"))
         parseError("Expected DEDENT after scenes block");
 
-    printf("<scenes_block> (done)\n");
+    fprintf(outputFile, "<scenes_block> (done)\n");
 }
 
 /* ---- OUTPUT STATEMENT ---- */
 void parse_OutputStatement() {
     skip_noise_tokens();
-     printf("Enter <output_stmt>\n");
+     fprintf(outputFile, "Enter <output_stmt>\n");
  
     // Parse output keyword
     parse_OutputKey();
@@ -880,22 +891,22 @@ void parse_OutputStatement() {
  
     parse_OutputBody();
  
-    printf("<output_stmt> (done) \n");
+    fprintf(outputFile, "<output_stmt> (done) \n");
 }
 
 void parse_OutputKey(){
-    printf("Enter <output_key>\n");
+    fprintf(outputFile, "Enter <output_key>\n");
 
     if(match("NARRATE")){
-        printf("<output_key> (done)\n");
+        fprintf(outputFile, "<output_key> (done)\n");
         return;
     }
     if(match("DIALOGUE")){
-        printf("<output_key> (done)\n");
+        fprintf(outputFile, "<output_key> (done)\n");
         return;   
     }
     if(match("SHOW")){
-        printf("<output_key> (done)\n");
+        fprintf(outputFile, "<output_key> (done)\n");
         return;
     }
 
@@ -904,7 +915,7 @@ void parse_OutputKey(){
  
 void parse_OutputBody(){
  
-    printf("Enter <output_body>\n");
+    fprintf(outputFile, "Enter <output_body>\n");
     skip_noise_tokens();
    if(check("INDENT")){
         parse_OutputBlock();
@@ -916,11 +927,11 @@ void parse_OutputBody(){
         parseError("an INDENT, STRING, or IDENTIFIER"); //expect an indent, string, or identifier
    }
  
-    printf("<output_body> (done) \n");
+    fprintf(outputFile, "<output_body> (done) \n");
 }
  
 void parse_OutputBlock(){
-    printf("Enter <output_block>\n");
+    fprintf(outputFile, "Enter <output_block>\n");
     if(!match("INDENT")){
         parseError("an INDENT"); 
     }
@@ -931,22 +942,22 @@ void parse_OutputBlock(){
     if(!match("DEDENT")){
         parseError("a DEDENT"); 
     }        
-    printf("<output_block> (done) \n");
+    fprintf(outputFile, "<output_block> (done) \n");
    
 }
  
  
 void parse_ContentItem(){
-    printf("Enter <content_item>...\n");
+    fprintf(outputFile, "Enter <content_item>...\n");
  
     parse_Concat();
  
-    printf("<content_item> (done) \n");
+    fprintf(outputFile, "<content_item> (done) \n");
 }
  
  
 void parse_Concat(){
-    printf("Enter <concat>\n");
+    fprintf(outputFile, "Enter <concat>\n");
  
     parse_ConcatElement();
     while(!isAtEnd() && check("PLUS")){
@@ -954,11 +965,11 @@ void parse_Concat(){
         parse_ConcatElement();
     }
  
-    printf("<concat> (done) \n");
+    fprintf(outputFile, "<concat> (done) \n");
 }
  
 void parse_ConcatElement(){
-    printf("Enter <concat_element>\n");
+    fprintf(outputFile, "Enter <concat_element>\n");
  
     if(check("IDENTIFIER")){
         parse_AttributeAccess();
@@ -966,7 +977,7 @@ void parse_ConcatElement(){
         parse_Literal();
     }
  
-    printf("<concant_element> (done) \n");
+    fprintf(outputFile, "<concant_element> (done) \n");
 }
  
 
@@ -974,7 +985,7 @@ void parse_ConcatElement(){
 void parse_InputStatement(){
  
     skip_noise_tokens();
-    printf("Enter <input_stmt>\n");
+    fprintf(outputFile, "Enter <input_stmt>\n");
  
  
     if(check("ASK")){
@@ -1019,79 +1030,79 @@ void parse_InputStatement(){
         parseError("a CHOICE Keyword"); //expects an "CHOICe" keyword
     }
  
-    printf("<input_stmt> (done) \n");
+    fprintf(outputFile, "<input_stmt> (done) \n");
 }
  
 void parse_TargetID(){
-    printf("Enter <target_id>\n");
+    fprintf(outputFile, "Enter <target_id>\n");
     parse_AttributeAccess();
  
-    printf("<target_id> (done) \n");
+    fprintf(outputFile, "<target_id> (done) \n");
 }
  
 void parse_PromptContent(){
-    printf("Enter <prompt_content>\n");
+    fprintf(outputFile, "Enter <prompt_content>\n");
     if(!match("STRING")){
         parseError("a STRING_LITERAL");
     }
-    printf("<prompt_content> (done) \n");
+    fprintf(outputFile, "<prompt_content> (done) \n");
 }
 
 void parse_ChoiceBlock(){
     skip_noise_tokens();
  
-    printf("Enter <choice_block>\n");
+    fprintf(outputFile, "Enter <choice_block>\n");
     if(check("INDENT")){
         match("INDENT");
-        printf(" -> Consumed INDENT.\n");
+        fprintf(outputFile, " -> Consumed INDENT.\n");
        
         parse_ChoiceList();
  
         if(!match("DEDENT"))
-            printf(" -> Consumed DEDENT.\n");
+            fprintf(outputFile, " -> Consumed DEDENT.\n");
         else parseError("a DEDENT"); //expects an DEDENT      
     } else {
         parseError("an INDENT"); //expects an "INDENT"
     }
    
-    printf("<choice_block> (done) \n");
+    fprintf(outputFile, "<choice_block> (done) \n");
 }
  
 //<choice_list> ::=  { “[“ <string_literal> ":" <literal> “]” “,” "NEWLINE"}
 void parse_ChoiceList() {
-    printf("Enter <choice_list>\n");
+    fprintf(outputFile, "Enter <choice_list>\n");
  
     if(!match("LBRACKET")){
         parseError("expects a RBRACKET [") ;
     }
-    printf(" -> Consumed '['\n");
+    fprintf(outputFile, " -> Consumed '['\n");
  
     if(!match("STRING")){
         parseError("expects a STRING");
     }
-    printf(" -> Consumed STRING_LITERAL: %s\n", currentToken()->lexeme);
+    fprintf(outputFile, " -> Consumed STRING_LITERAL: %s\n", currentToken()->lexeme);
  
     if(!match("COLON")) {
         parseError("a COLON");
     }
-    printf(" -> Consumed COLON\n");
+    fprintf(outputFile, " -> Consumed COLON\n");
  
     parse_Literal();
  
     if(!match("RBRACKET")){
         parseError("a BRACKET ]");
     }
-    printf(" -> Consumed RBRACKET ]\n");
+    fprintf(outputFile, " -> Consumed RBRACKET ]\n");
  
     if(check("COMMA")){
         if(match("COMMA")){
             if(!match("NEWLINE")) parseError("expect a NEWLINE");
-            printf(" -> Consumed NEWLINE\n");
+            fprintf(outputFile, " -> Consumed NEWLINE\n");
             parse_ChoiceList();
         }
     }
  
-    printf("<choice_list> (done) \n");
+    fprintf(outputFile, "<choice_list> (done) \n");
 }
 /*
 ---- CONDITION STATEMENT ----
@@ -1105,7 +1116,7 @@ void parse_ChoiceList() {
 */
 
 void parse_ConditionStatement(){
-    printf("\nEnter <condition_stmt>\n");
+    fprintf(outputFile, "\nEnter <condition_stmt>\n");
  
     if(!match("IF")){
         parseError("an IF keyword"); 
@@ -1113,11 +1124,11 @@ void parse_ConditionStatement(){
     parse_Expression();
     parse_ConditionalTail();
  
-    printf("<condition_stmt> (done) \n");
+    fprintf(outputFile, "<condition_stmt> (done) \n");
 }
 
 void parse_ConditionalTail(){
-    printf("\nEnter <conditional_tail>\n");
+    fprintf(outputFile, "\nEnter <conditional_tail>\n");
     if(!match("COLON"))
         parseError("a COLON"); 
 
@@ -1132,11 +1143,11 @@ void parse_ConditionalTail(){
         parse_StatementBlock();
     }
  
-    printf("<conditional_tail> (done) \n");
+    fprintf(outputFile, "<conditional_tail> (done) \n");
 }
 
 void parse_ElifClause(){
-    printf("\nEnter <elif_clause>\n");
+    fprintf(outputFile, "\nEnter <elif_clause>\n");
     if(!match("ELIF")){
         parseError("an ELIF keyword"); 
     } 
@@ -1145,10 +1156,10 @@ void parse_ElifClause(){
         parseError("a COLON"); 
 
     parse_StatementBlock();
-    printf("<elif_clause> (done) \n");
+    fprintf(outputFile, "<elif_clause> (done) \n");
 }
 void parse_ElseClause(){
-    printf("\nEnter <else_clause>\n");
+    fprintf(outputFile, "\nEnter <else_clause>\n");
     if(!match("ELSE")){
         parseError("an ELSE keyword"); 
     } 
@@ -1156,7 +1167,7 @@ void parse_ElseClause(){
         parseError("a COLON"); 
 
     parse_StatementBlock();
-    printf("<else_clause> (done) \n");
+    fprintf(outputFile, "<else_clause> (done) \n");
 }
 
 /* LOOP STATEMENT 
@@ -1172,17 +1183,17 @@ void parse_ElseClause(){
 */
 
 void parse_IterativeStatement(){
-    printf("\nEnter <iterative_stmt>\n");
+    fprintf(outputFile, "\nEnter <iterative_stmt>\n");
 
     if (match("FOR"))
         parse_ForStructure();
     else if (match("REPEAT"))
         parse_RepeatStructure();
 
-    printf("<iterative_stmt> (done) \n");
+    fprintf(outputFile, "<iterative_stmt> (done) \n");
 }
 void parse_ForStructure(){
-    printf("\nEnter <for_structure>\n");
+    fprintf(outputFile, "\nEnter <for_structure>\n");
 
     parse_LoopVariable();
 
@@ -1193,28 +1204,28 @@ void parse_ForStructure(){
         parseError("a COLON");
     parse_StatementBlock();
 
-    printf("<for_structure> (done) \n");
+    fprintf(outputFile, "<for_structure> (done) \n");
 }
 void parse_CollectionSource(){
-    printf("\nEnter <collection_source>\n");
+    fprintf(outputFile, "\nEnter <collection_source>\n");
     if(check("NARRATE") || check("DIALOGUE") || check("SHOW")){
         parse_OutputStatement();
     } else {
         parse_Expression();
     }
-    printf("<collection_source> (done) \n");
+    fprintf(outputFile, "<collection_source> (done) \n");
 }
 void parse_LoopVariable(){
-    printf("\nEnter <loop_variable>\n");
+    fprintf(outputFile, "\nEnter <loop_variable>\n");
     if (match("IDENTIFIER")) {
     } else if (match("CHARACTER") || match("SCENE") || match("TEMPLATE")) {
     } else {
         parseError("an IDENTIFIER or ENTITY_TYPE");
     }
-    printf("<loop_variable> (done) \n");
+    fprintf(outputFile, "<loop_variable> (done) \n");
 }
 void parse_RepeatStructure(){
-    printf("\nEnter <repeat_structure>\n");
+    fprintf(outputFile, "\nEnter <repeat_structure>\n");
 
     if(match("UNTIL")){
         parse_Expression();
@@ -1230,5 +1241,5 @@ void parse_RepeatStructure(){
         parse_StatementBlock();
     }
 
-    printf("<repeat_structure> (done) \n");
+    fprintf(outputFile, "<repeat_structure> (done) \n");
 }

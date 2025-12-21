@@ -7,3 +7,4 @@ tablegen
 GenerateTable
 testing.st
 test.st
+SyntaxAnalysis.txt
