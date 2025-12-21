@@ -3,9 +3,17 @@ start
 # INPUT 
 ask Elio "What is your name?" as name
 
+# DECLARATION
+template Slap(x, y):
+    narrate: "A loud slap echoes."
+    dialogue x: "Hey! Why did you slap me?"
+    dialogue y: "Because you ate my lunch!"
+    mood = "angry"
+
+
 
 # ITERATIVE
-repeat until health <= 0:
+repeat until health  <= 0:
     damage = damage + 5
     health = health - damage
     show narrator: health
@@ -16,8 +24,11 @@ narrate hero.name: "The hero approaches the castle"
 dialogue hero: "The hero approaches the castle"
 show: "The hero approaches the castle"
 show andrea: "Yehey!"
-show Ocean: Beach_part
+show Ocean: beach
 dialogue hero: "We must hurry!" + guard1
+
+# DECLARATION
+character andrea
 
 # ASSIGNMENT STATEMENT
 
@@ -63,7 +74,7 @@ ready = (hp > 0 and stamina > 10) or is_awake
 active = value > 10 and count % 2 == 0
 
 #ITERATIVE
-for hero in party:
+for hero in party:::
   show hero: "Ready for battle!"
   dialogue:
     "Let's go!"
@@ -71,7 +82,7 @@ for hero in party:
 # CONDITIONAL STATEMENT
 
 # if
-if Elio.mood is "calm":
+if "calm":
     scene blue: 
         describe, "andrea"
 
@@ -93,7 +104,6 @@ elif temperature > 40 and temperature <= 50:
 else:
     scene reymel: 
         describe, "reymel"
-
 
 # ITERATIVE
 repeat 3 times:
