@@ -28,6 +28,8 @@ A simple lexer & parser for a story-telling focused programming language written
   ```
   Tabs appear as `^I`. If found, replace them with spaces.
 
+  > To avoid tabs entirely, write the code snippet on vs code. 
+
 - All commands should be run from the project root directory.
 
 

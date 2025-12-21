@@ -191,7 +191,7 @@ void parseError(const char *expected)
                 curr->lineNumber, expected, curr->token_name, curr->lexeme);
     }
     fprintf(stderr, "Attempting panic-mode recovery to next NEWLINE...\n");
-    fprintf(stderr, "------------------\n");
+    fprintf(stderr, "-------------------\n");
 
     // PANIC MODE: do not exit; resync and continue
     recover_to_newline();
