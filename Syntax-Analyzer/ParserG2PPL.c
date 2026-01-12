@@ -761,17 +761,18 @@ void parse_CharacterDeclaration()
         If next token after IDENTIFIER is COLON → attribute rule
     */
 
-    if (check("IDENTIFIER") && (!strcmp(nextToken()->token_name, "COLON")))
-    {
-        /* Rule: character id : <attribute_block> */
-        parse_IDList();
-    }
-    else
+    if (check("IDENTIFIER") && nextToken() != NULL && strcmp(nextToken()->token_name, "COLON") == 0)
     {
         /* Rule: character <id_list> */
         match("IDENTIFIER");   // consume id
         match("COLON");        // consume ':'
         parse_AttributeBlock();        // this consumes IDENTIFIER itself
+        
+    }
+    else
+    {
+        /* Rule: character id : <attribute_block> */
+        parse_IDList();
     }
     
     endScope();
