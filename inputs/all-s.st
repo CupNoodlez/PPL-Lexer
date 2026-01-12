@@ -74,7 +74,7 @@ ready = (hp > 0 and stamina > 10) or is_awake
 active = value > 10 and count % 2 == 0
 
 #ITERATIVE
-for hero in party:::
+for hero in party:
   show hero: "Ready for battle!"
   dialogue:
     "Let's go!"
@@ -110,12 +110,10 @@ for hero in party:
   show hero: "Ready for battle!"
   dialogue:
     "Let's go!"
-
   for hero in party:
     show hero: "Ready for battle!"
     dialogue:
       "Let's go!"
-
     repeat 3 times:
       show narrator: "Knock knock knock!"
 
