@@ -101,7 +101,7 @@ Token* lex_all(char* filename, int* token_num) {
                 beginningSpaces++;
                 cursor++;
             }
-            if (*cursor == '\n' || *cursor == '\0' || *cursor == '#') continue;
+            if (*cursor == '\n' || *cursor == '\r' || *cursor == '\0' || *cursor == '#') continue;
             if (beginningSpaces > peek(&indentationStack)) {
                 push(&indentationStack, beginningSpaces);
                 emitToken(tokens, &tokenCount, lexemeIndex, cursor, curr_line, "INDENT");
