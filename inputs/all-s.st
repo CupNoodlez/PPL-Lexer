@@ -42,7 +42,7 @@ player.hp = 100
 denmar = "goat"
 
 #float literal
-ivan = 3.5
+ivan = 3.0
 
 #attribute with assignment
 player.score += 5
@@ -98,7 +98,7 @@ else:
 if temperature > 30:
     scene blue: 
         describe, "andrea"
-elif temperature > 40 and temperature <= 50: 
+eliff temperature > 40 and temperature <= 50: 
     scene denmar: 
         describe, "denmar"
 else:
@@ -114,6 +114,7 @@ for hero in party:
     show hero: "Ready for battle!"
     dialogue:
       "Let's go!"
+      
     repeat 3 times:
       show narrator: "Knock knock knock!"
 

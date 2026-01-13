@@ -13,6 +13,7 @@ int indentLevel = 0;
 
 // Panic-mode state
 static bool recovering = false;
+static bool errorOccurred = false;
 
 void printIndent();
 void beginScope(const char* token_name);
@@ -122,6 +123,9 @@ int main() {
     // fprintf(outputFile, "Next token is: %s  Next lexeme is: %s\n", tokens[current_pos].token_name, tokens[current_pos].lexeme);
     parse_Program();
 
+    // Skip any trailing noise tokens (comments, newlines) after END
+    skip_noise_tokens();
+    
     if (!isAtEnd()) {
         parseError("End-of-File (EOF)");
     }
@@ -201,6 +205,8 @@ bool match(const char* token_name) {
 
 void parseError(const char *expected)
 {
+    errorOccurred = true;  // Set error flag
+    
     if (isAtEnd())
     {
         fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
@@ -220,22 +226,83 @@ void parseError(const char *expected)
     recover_to_newline();
 }
 
-// Recover by skipping until NEWLINE; consume exactly one NEWLINE and resume
+// Recover by finding a good synchronization point (statement boundary or block end)
 static void recover_to_newline(void)
 {
     recovering = true;
+    int indentDepth = 0;
 
-    while (!isAtEnd() && !check("NEWLINE")) {
+    // Skip until we find a good synchronization point
+    while (!isAtEnd()) {
+        // Track INDENT/DEDENT to skip entire malformed blocks
+        if (check("INDENT")) {
+            indentDepth++;
+            advance();
+            continue;
+        }
+        
+        if (check("DEDENT")) {
+            if (indentDepth > 0) {
+                // We're inside a malformed block, consume this DEDENT
+                indentDepth--;
+                advance();
+                if (indentDepth == 0) {
+                    // We've exited the malformed block, now look for next statement
+                    fprintf(stderr, "Recovered: exited malformed block\n");
+                }
+                continue;
+            } else {
+                // Not inside a malformed block, DEDENT is a good sync point
+                fprintf(stderr, "Recovered at DEDENT (block end)\n");
+                recovering = false;
+                return;
+            }
+        }
+        
+        // END keyword - always a good recovery point
+        if (check("END")) {
+            fprintf(stderr, "Recovered at END keyword\n");
+            recovering = false;
+            return;
+        }
+        
+        // Found NEWLINE - check if next token starts a statement (but only if not in a malformed block)
+        if (check("NEWLINE") && indentDepth == 0) {
+            advance(); // consume the NEWLINE
+            
+            // Skip any additional noise tokens after NEWLINE
+            while ((check("COMMENT") || check("COMMENT_MULTI") || check("NEWLINE")) && !isAtEnd()) {
+                advance();
+            }
+            
+            // Check for statement-starting keywords or tokens
+            if (isAtEnd() || 
+                check("DEDENT") ||
+                check("END") ||
+                check("CHARACTER") || 
+                check("SCENE") || 
+                check("TEMPLATE") ||
+                check("IF") || 
+                check("ELIF") ||
+                check("ELSE") ||
+                check("FOR") || 
+                check("REPEAT") ||
+                check("ASK") ||
+                check("CHOICE") ||
+                check("NARRATE") ||
+                check("DIALOGUE") ||
+                check("SHOW") ||
+                check("IDENTIFIER")) {
+                fprintf(stderr, "Recovered at statement boundary (after NEWLINE, before %s)\n",
+                       isAtEnd() ? "EOF" : tokens[current_pos].token_name);
+                recovering = false;
+                return;
+            }
+            // Not a statement start; keep searching
+            continue;
+        }
+        
         advance();
-    }
-
-    // Consume exactly one NEWLINE to start next statement cleanly
-    if (check("NEWLINE")) {
-        advance();
-        // if(!isAtEnd()){
-        //     fprintf(outputFile, "Recovered. Next token is: %s  Next lexeme is: %s\n",
-        //            tokens[current_pos].token_name, tokens[current_pos].lexeme);
-        // }
     }
 
     recovering = false;
@@ -261,6 +328,39 @@ void parse_Program() {
         parseError("START keyword");
     }
     parse_StatementList();
+    
+    // After parsing statement list (possibly with errors), consume everything until END
+    // This handles stray DEDENT/INDENT tokens from malformed blocks
+    while (!isAtEnd() && !check("END")) {
+        // Check if this looks like a valid top-level statement
+        if (!check("DEDENT") && !check("INDENT") && !check("NEWLINE") && 
+            !check("COMMENT") && !check("COMMENT_MULTI")) {
+            // Found something that looks like a statement - try to parse it
+            if (check("CHARACTER") || check("SCENE") || check("TEMPLATE") ||
+                check("IF") || check("FOR") || check("REPEAT") ||
+                check("ASK") || check("CHOICE") ||
+                check("NARRATE") || check("DIALOGUE") || check("SHOW") ||
+                check("IDENTIFIER")) {
+                // Reset error flag and try to parse
+                errorOccurred = false;
+                parse_Statement();
+                skip_noise_tokens();
+                if (errorOccurred) {
+                    // If parsing this statement failed, continue consuming tokens
+                    continue;
+                }
+            } else {
+                // Unknown token, consume it
+                advance();
+            }
+        } else {
+            // Consume noise/structural tokens
+            advance();
+        }
+    }
+    
+    skip_noise_tokens();
+    
     if(!match("END")){
         parseError("END keyword");
     }
@@ -272,7 +372,12 @@ void parse_StatementList() {
     beginScope("StatementList");
     
     skip_noise_tokens();
-    while (!isAtEnd() && !check("END") && !check("DEDENT")) {
+    while (!isAtEnd() && !check("END")) {
+        // If we hit DEDENT, we're at the end of a block, not the program
+        if (check("DEDENT")) {
+            break;
+        }
+        
         parse_Statement();
         skip_noise_tokens();
     }
@@ -285,33 +390,40 @@ void parse_Statement() {
     skip_noise_tokens();
     beginScope("Statement");
     
-    while (!check("END") && !check("DEDENT")) {
-       
-        if (check("IDENTIFIER")) {
-            parse_AssignmentStatement();
+    // Reset error flag for this statement
+    errorOccurred = false;
+    
+    // Parse exactly ONE statement (no while loop)
+    if (check("IDENTIFIER")) {
+        parse_AssignmentStatement();
+    }
+    else if (check("ASK") || check("CHOICE")) {
+        parse_InputStatement();
+    }
+    else if (check("NARRATE") || check("DIALOGUE") || check("SHOW")){
+        parse_OutputStatement();
+    }
+    else if (check("IF")) {
+        parse_ConditionStatement();
+    }
+    else if (check("FOR") || check("REPEAT")) {
+        parse_IterativeStatement();
+    }
+    else if(check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
+        parse_DeclarationStatement();
+    }
+    else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
+        skip_noise_tokens();
+        // After skipping noise, check if there's an actual statement to parse
+        if (!check("END") && !check("DEDENT") && !isAtEnd()) {
+            endScope();
+            parse_Statement(); // Recursively parse the actual statement
+            return;
         }
-        else if (check("ASK") || check("CHOICE")) {
-            parse_InputStatement();
-        }
-        else if (check("NARRATE") || check("DIALOGUE") || check("SHOW")){
-            parse_OutputStatement();
-        }
-        else if (check("IF")) {
-            parse_ConditionStatement();
-        }
-        else if (check("FOR") || check("REPEAT")) {
-            parse_IterativeStatement();
-        }
-        else if(check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
-            parse_DeclarationStatement();
-        }
-        else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
-            skip_noise_tokens();
-            continue;
-        }
-        else {
-             parseError("an IDENTIFIER or EOF (unhandled statement token_name)");
-        }  
+    }
+    else if (!check("END") && !check("DEDENT") && !isAtEnd()) {
+        // Only report error if we're not at a natural boundary
+        parseError("a valid statement (IDENTIFIER, ASK, CHOICE, NARRATE, DIALOGUE, SHOW, IF, FOR, REPEAT, CHARACTER, SCENE, or TEMPLATE)");
     }
 
     endScope();
@@ -604,6 +716,8 @@ void parse_AssignmentStatement()
     else
     {
         parseError("assignment operator (=, +=, -=, *=, /=, %=)");
+        endScope();
+        return;  // Don't continue parsing after error
     }
 
     parse_Expression();
@@ -992,13 +1106,21 @@ void parse_InputStatement(){
         }
  
         parse_PromptContent();
+        if (errorOccurred) {
+            endScope();
+            return;  // Exit early after error
+        }
  
         if(!match("AS")){
             parseError(" AS Keyword");  //expect an "as" keyword
+            endScope();
+            return;  // Exit early after error
         }
  
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER"); //expect an "identifier"
+            endScope();
+            return;  // Exit early after error
         }
  
     } else if (check("CHOICE")){
