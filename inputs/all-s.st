@@ -75,9 +75,9 @@ active = value > 10 and count % 2 == 0
 
 #ITERATIVE
 for hero in party:
-    show hero: "Ready for battle!"
-    dialogue:
-        "Let's go!"
+  show hero: "Ready for battle!"
+  dialogue:
+    "Let's go!"
 
 # CONDITIONAL STATEMENT
 
@@ -98,7 +98,7 @@ else:
 if temperature > 30:
     scene blue: 
         describe, "andrea"
-eliff temperature > 40 and temperature <= 50: 
+elif temperature > 40 and temperature <= 50: 
     scene denmar: 
         describe, "denmar"
 else:
@@ -107,24 +107,16 @@ else:
 
 # ITERATIVE
 for hero in party:
+  show hero: "Ready for battle!"
+  dialogue:
+    "Let's go!"
+  for hero in party:
     show hero: "Ready for battle!"
     dialogue:
-<<<<<<< HEAD
       "Let's go!"
       
     repeat 3 times:
       show narrator: "Knock knock knock!"
-=======
-        "Let's go!"
-
-    for hero in party:
-        show hero: "Ready for battle!"
-        dialogue:
-            "Let's go!"
-
-        repeat 3 times:
-            show narrator: "Knock knock knock!"
->>>>>>> 1d6606d0f98ae0ffde49fe4b6c8f2a3c7ea04787
 
 # DECLARATION
 character Hero, Wingman, Villain
