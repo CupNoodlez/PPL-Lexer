@@ -837,6 +837,10 @@ void parse_TemplateDeclaration()
     {
         if(!match("IDENTIFIER")){
             parseError("IDENTIFIER");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
 
         // Handle EBNF curly braces { "," <param> } using a while loop
@@ -844,20 +848,38 @@ void parse_TemplateDeclaration()
         {
             match("COMMA");
             if(!match("IDENTIFIER")){
-            parseError("IDENTIFIER");
+                parseError("IDENTIFIER");
+                if (errorOccurred) {
+                    endScope();
+                    return;
+                }
             }
         }
 
-        if (!match("RPAREN"))
+        if (!match("RPAREN")) {
             parseError(")");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        }
     }
     else
     {
         parseError("( after template ID");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
-    if (!match("COLON"))
+    if (!match("COLON")) {
         parseError(":");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     // Parse the blocks required by the grammar
     parse_StatementBlock(); 
