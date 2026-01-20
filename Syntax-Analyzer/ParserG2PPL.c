@@ -1417,11 +1417,21 @@ void parse_ForStructure(){
  
     parse_LoopVariable();
  
-    if(!match("IN"))
+    if(!match("IN")) {
         parseError("an IN keyword");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
     parse_CollectionSource();
-    if(!match("COLON"))
+    if(!match("COLON")) {
         parseError("a COLON");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
     parse_StatementBlock();
  
     endScope();
@@ -1453,15 +1463,30 @@ void parse_RepeatStructure(){
  
     if(match("UNTIL")){
         parse_Expression();
-        if(!match("COLON"))
+        if(!match("COLON")) {
             parseError("a COLON");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        }
         parse_StatementBlock();
     } else {
         parse_Expression();
-        if(!match("TIMES"))
+        if(!match("TIMES")) {
             parseError("a TIMES keyword");
-        if(!match("COLON"))
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        }
+        if(!match("COLON")) {
             parseError("a COLON");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        }
         parse_StatementBlock();
     }
  
