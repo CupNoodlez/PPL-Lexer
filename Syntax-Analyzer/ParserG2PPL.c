@@ -491,13 +491,23 @@ void parse_StatementBlock()
     skip_noise_tokens();
     beginScope("StatementBlock");
 
-    if (!match("INDENT"))
+    if (!match("INDENT")) {
         parseError("an INDENT");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     parse_StatementList();
 
-    if (!match("DEDENT")) 
+    if (!match("DEDENT")) {
         parseError("a DEDENT");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     endScope();
 }
@@ -509,6 +519,10 @@ void parse_IDList()
     if (!match("IDENTIFIER"))
     {
         parseError("an IDENTIFIER");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     while (check("COMMA"))
@@ -517,6 +531,10 @@ void parse_IDList()
         if (!match("IDENTIFIER"))
         {
             parseError("an IDENTIFIER");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
     }
 
@@ -575,6 +593,10 @@ void parse_Literal()
     }
     else {
         parseError("a literal (INTEGER, FLOAT, STRING, CHAR, TRUE, or FALSE)");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
     
     endScope();
@@ -593,6 +615,10 @@ void parse_Expression()
         if (!match("OR"))
         {
             parseError("OR");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
         parse_AndExpr();
     }
@@ -612,6 +638,10 @@ void parse_AndExpr()
         if (!match("AND"))
         {
             parseError("AND");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
         parse_NotExpr();
     }
@@ -629,6 +659,10 @@ void parse_NotExpr()
         if (!match("NOT"))
         {
             parseError("NOT");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
     }
 
@@ -666,6 +700,10 @@ void parse_ArithmeticExpr()
         if (!(match("PLUS") || match("MINUS")))
         {
             parseError("ADDITIVE_OP");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
         parse_Term();
     }
@@ -685,6 +723,10 @@ void parse_Term()
         if (!(match("MULTIPLY") || match("DIVIDE") || match("MODULUS")))
         {
             parseError("MULTIPLICATIVE_OP");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
         parse_PowerExpr();
     }
@@ -704,6 +746,10 @@ void parse_PowerExpr()
         if (!match("EXPONENT"))
         {
             parseError("'^'");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
         parse_UnaryExpr();
     }
@@ -721,6 +767,10 @@ void parse_UnaryExpr()
         if (!match("MINUS"))
         {
             parseError("'-'");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
     }
 
@@ -740,6 +790,10 @@ void parse_Factor()
         if (!match("RPAREN"))
         {
             parseError("')");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
 
         skip_noise_tokens();
@@ -819,6 +873,10 @@ void parse_DeclarationStatement()
     else
     {
         parseError("Expected 'character', 'scene', or 'template'");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
     
     endScope();
@@ -895,13 +953,19 @@ void parse_AttributeBlock()
     if (!match("NEWLINE"))
     {
         parseError("Expected 'NEWLINE' before attribute block");
-        return; // Stop parsing this function to avoid cascading errors
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     if (!match("INDENT"))
     {
         parseError("Expected 'INDENT' after newline");
-        return;
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     parse_AttributeList();
@@ -909,6 +973,10 @@ void parse_AttributeBlock()
     if (!match("DEDENT"))
     {
         parseError("Expected 'DEDENT' at end of attribute block");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     endScope();
@@ -923,6 +991,10 @@ void parse_AttributeList()
     if (!match("ASSIGN"))
     {
         parseError("Expected '=' in attribute assignment");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     parse_Literal();
@@ -939,6 +1011,10 @@ void parse_AttributeList()
         if (!match("ASSIGN"))
         {
             parseError("Expected '=' in attribute assignment");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
 
         parse_Literal();
@@ -956,12 +1032,20 @@ void parse_CharacterDeclaration()
     if (!match("CHARACTER"))
     {
         parseError("Expected 'character'");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     /* Both rules start with an identifier */
     if (!check("IDENTIFIER"))
     {
         parseError("Identifier");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     /* 
@@ -1008,11 +1092,19 @@ void parse_SceneDeclaration()
         else
         {
             parseError("Expected ':' after scene ID");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
     }
     else
     {
         parseError("Expected identifier");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
 
     endScope();
@@ -1026,16 +1118,26 @@ void parse_SceneEntry()
     parse_AttributeAccess();
 
     // must have a comma
-    if (!match("COMMA"))
+    if (!match("COMMA")) {
         parseError("',' after scenario");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     // must have string literal
     if (check("STRING"))
         match("STRING");
     else if (check("CHAR"))
         match("CHAR");
-    else
+    else {
         parseError("STRING or CHAR literal");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     endScope();
 }
@@ -1071,19 +1173,34 @@ void parse_ScenesBlock()
     beginScope("ScenesBlock");
 
     /* Must begin with NEWLINE */
-    if (!match("NEWLINE"))
+    if (!match("NEWLINE")) {
         parseError("Expected NEWLINE before scenes block");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     /* Must be followed by INDENT */
-    if (!match("INDENT"))
+    if (!match("INDENT")) {
         parseError("Expected INDENT at start of scenes block");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     /* Now parse the scene list */
     parse_SceneList();
 
     /* Must end with DEDENT */
-    if (!match("DEDENT"))
+    if (!match("DEDENT")) {
         parseError("Expected DEDENT after scenes block");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
 
     endScope();
 }
@@ -1102,6 +1219,10 @@ void parse_OutputStatement() {
  
     if(!match("COLON")) {
         parseError("a COLON"); //expects a colon
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     parse_OutputBody();
@@ -1120,6 +1241,10 @@ void parse_OutputKey(){
     }
     else {
         parseError("NARRATE, DIALOGUE, or SHOW keyword");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
     
     endScope();
@@ -1134,9 +1259,26 @@ void parse_OutputBody(){
     }
     else if (check("STRING") || check("IDENTIFIER")) {
         parse_ContentItem();
+        
+        // Check for unexpected tokens after content (missing + operator)
+        if (!check("NEWLINE") && !check("DEDENT") && !check("END") && 
+            !check("COMMENT") && !check("COMMENT_MULTI") && !isAtEnd()) {
+            errorOccurred = true;
+            Token *t = currentToken();
+            fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
+            fprintf(stderr, "Line %d: Unexpected token [%s] '%s' after output content. ", 
+                    t->lineNumber, t->token_name, t->lexeme);
+            recover_to_newline();
+            endScope();
+            return;
+        }
     }
     else {
         parseError("an INDENT, STRING, or IDENTIFIER"); //expect an indent, string, or identifier
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     endScope();
@@ -1147,6 +1289,10 @@ void parse_OutputBlock(){
 
     if(!match("INDENT")){
         parseError("an INDENT"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     parse_ContentItem();
@@ -1154,6 +1300,10 @@ void parse_OutputBlock(){
 
     if(!match("DEDENT")){
         parseError("a DEDENT"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }        
     
     endScope();
@@ -1214,14 +1364,18 @@ void parse_InputStatement(){
  
         if(!match("AS")){
             parseError(" AS Keyword");  //expect an "as" keyword
-            endScope();
-            return;  // Exit early after error
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER"); //expect an "identifier"
-            endScope();
-            return;  // Exit early after error
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
     } else if (check("CHOICE")){
@@ -1229,24 +1383,44 @@ void parse_InputStatement(){
  
         if(!match("AS")){
             parseError("AS Keyword"); //expect an "as" keyword
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
         if(!match("IDENTIFIER")){
             parseError("an IDENTIFIER"); //expect an "identifier"
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
         if(!match("COLON")){
             parseError("a COLON"); //expect a "colon"
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
         if(!match("NEWLINE")){
             parseError("a NEWLINE"); //expect a "newLine"
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
         }
  
         parse_ChoiceBlock();
  
     } else {
         parseError("a CHOICE Keyword"); //expects an "CHOICe" keyword
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     endScope();
@@ -1265,6 +1439,10 @@ void parse_PromptContent(){
 
     if(!match("STRING")){
         parseError("a STRING_LITERAL");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
     
     endScope();
@@ -1280,10 +1458,19 @@ void parse_ChoiceBlock(){
        
         parse_ChoiceList();
  
-        if(!match("DEDENT")) { }
-        else parseError("a DEDENT"); //expects an DEDENT      
+        if(!match("DEDENT")) {
+            parseError("a DEDENT"); //expects an DEDENT
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        }
     } else {
         parseError("an INDENT"); //expects an "INDENT"
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
    
     endScope();
@@ -1295,25 +1482,47 @@ void parse_ChoiceList() {
  
     if(!match("LBRACKET")){
         parseError("expects a RBRACKET [") ;
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     if(!match("STRING")){
         parseError("expects a STRING");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     if(!match("COLON")) {
         parseError("a COLON");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     parse_Literal();
  
     if(!match("RBRACKET")){
         parseError("a BRACKET ]");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
  
     if(check("COMMA")){
         if(match("COMMA")){
-            if(!match("NEWLINE")) parseError("expect a NEWLINE");
+            if(!match("NEWLINE")) {
+                parseError("expect a NEWLINE");
+                if (errorOccurred) {
+                    endScope();
+                    return;
+                }
+            }
             parse_ChoiceList();
         }
     }
@@ -1336,6 +1545,10 @@ void parse_ConditionStatement(){
  
     if(!match("IF")){
         parseError("an IF keyword"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     } 
     parse_Expression();
     parse_ConditionalTail();
@@ -1346,8 +1559,13 @@ void parse_ConditionStatement(){
 void parse_ConditionalTail(){
     beginScope("ConditionalTail");
 
-    if(!match("COLON"))
+    if(!match("COLON")) {
         parseError("a COLON"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    }
  
     parse_StatementBlock();
     while(check("ELIF")){
@@ -1355,8 +1573,13 @@ void parse_ConditionalTail(){
     }
     if(check("ELSE")){
         match("ELSE");
-        if(!match("COLON"))
-            parseError("a COLON"); 
+        if(!match("COLON")) {
+            parseError("a COLON");
+            if (errorOccurred) {
+                endScope();
+                return;
+            }
+        } 
         parse_StatementBlock();
     }
  
@@ -1368,10 +1591,19 @@ void parse_ElifClause(){
 
     if(!match("ELIF")){
         parseError("an ELIF keyword"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     } 
     parse_Expression();
-    if(!match("COLON"))
-        parseError("a COLON"); 
+    if(!match("COLON")) {
+        parseError("a COLON");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    } 
  
     parse_StatementBlock();
     endScope();
@@ -1381,9 +1613,18 @@ void parse_ElseClause(){
     
     if(!match("ELSE")){
         parseError("an ELSE keyword"); 
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     } 
-    if(!match("COLON"))
-        parseError("a COLON"); 
+    if(!match("COLON")) {
+        parseError("a COLON");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
+    } 
  
     parse_StatementBlock();
     
@@ -1454,6 +1695,10 @@ void parse_LoopVariable(){
     } else if (match("CHARACTER") || match("SCENE") || match("TEMPLATE")) {
     } else {
         parseError("an IDENTIFIER or ENTITY_TYPE");
+        if (errorOccurred) {
+            endScope();
+            return;
+        }
     }
     
     endScope();
