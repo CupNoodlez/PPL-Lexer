@@ -259,7 +259,7 @@ Token* lex_all(char* filename, int* token_num) {
             else goto INVALID;
         }
         STRING: {
-            if (*++cursor == '\"') goto STRING_END;
+            if (*++cursor == '\"' || *cursor == '\n' || *cursor == '\r') goto STRING_END;
             if (*cursor == '\0') goto INVALID;
             else goto STRING;
         }
