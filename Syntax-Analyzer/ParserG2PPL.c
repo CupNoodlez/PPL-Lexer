@@ -205,7 +205,7 @@ bool match(const char* token_name) {
 
 void parseError(const char *expected)
 {
-    errorOccurred = true;  // Set error flag
+    errorOccurred = true;  // Set error flag to true when enccountered syntax error
     
     if (isAtEnd())
     {
@@ -222,11 +222,24 @@ void parseError(const char *expected)
     fprintf(stderr, "Attempting panic-mode recovery to next NEWLINE...\n");
     fprintf(stderr, "-------------------\n");
 
-    // PANIC MODE: do not exit; resync and continue
+    // Panic mode begins (this function will find synchronizing token (NEWLINE + Token))
     recover_to_newline();
 }
 
-// Recover by finding a good synchronization point (statement boundary or block end)
+static bool isStatementStart(const char *name) {
+    if (name == NULL) 
+        return false;
+
+    return strcmp(name, "CHARACTER") == 0 || strcmp(name, "SCENE") == 0 || 
+           strcmp(name, "TEMPLATE") == 0 || strcmp(name, "IF") == 0 || 
+           strcmp(name, "ELIF") == 0 || strcmp(name, "ELSE") == 0 ||
+           strcmp(name, "FOR") == 0 || strcmp(name, "REPEAT") == 0 ||
+           strcmp(name, "ASK") == 0 || strcmp(name, "CHOICE") == 0 ||
+           strcmp(name, "NARRATE") == 0 || strcmp(name, "DIALOGUE") == 0 ||
+           strcmp(name, "SHOW") == 0 || strcmp(name, "IDENTIFIER") == 0 ||
+           strcmp(name, "DEDENT") == 0 || strcmp(name, "END") == 0;
+}
+
 static void recover_to_newline(void)
 {
     recovering = true;
@@ -234,7 +247,7 @@ static void recover_to_newline(void)
 
     // Skip until we find a good synchronization point
     while (!isAtEnd()) {
-        // Track INDENT/DEDENT to skip entire malformed blocks
+        // Indentation tracking
         if (check("INDENT")) {
             indentDepth++;
             advance();
@@ -243,58 +256,51 @@ static void recover_to_newline(void)
         
         if (check("DEDENT")) {
             if (indentDepth > 0) {
-                // We're inside a malformed block, consume this DEDENT
+                // Consume DEDENT in malformed block
                 indentDepth--;
                 advance();
                 if (indentDepth == 0) {
-                    // We've exited the malformed block, now look for next statement
                     fprintf(stderr, "Recovered: exited malformed block\n");
                 }
                 continue;
             } else {
-                // Not inside a malformed block, DEDENT is a good sync point
+                // Synchronization 
                 fprintf(stderr, "Recovered at DEDENT (block end)\n");
                 recovering = false;
                 return;
             }
         }
         
-        // END keyword - always a good recovery point
+        // Synchronization
         if (check("END")) {
             fprintf(stderr, "Recovered at END keyword\n");
             recovering = false;
             return;
         }
         
-        // Found NEWLINE - check if next token starts a statement (but only if not in a malformed block)
-        if (check("NEWLINE") && indentDepth == 0) {
+        // Checks if NEWLINE + Token
+        if (check("NEWLINE")) {
             advance(); // consume the NEWLINE
             
-            // Skip any additional noise tokens after NEWLINE
+            // Skip noise tokens after NEWLINE
             while ((check("COMMENT") || check("COMMENT_MULTI") || check("NEWLINE")) && !isAtEnd()) {
                 advance();
             }
+
+            // Check if we have an INDENT followed by a valid statement start
+            if (check("INDENT")) {
+                Token* next = nextToken();
+                if (next != NULL && isStatementStart(next->token_name)) {
+                    // Do not consume INDENT here; let the caller (e.g., parse_StatementBlock) consume it.
+                    fprintf(stderr, "Recovered at statement boundary (at INDENT before block)\n");
+                    recovering = false;
+                    return;
+                }
+            }
             
             // Check for statement-starting keywords or tokens
-            if (isAtEnd() || 
-                check("DEDENT") ||
-                check("END") ||
-                check("CHARACTER") || 
-                check("SCENE") || 
-                check("TEMPLATE") ||
-                check("IF") || 
-                check("ELIF") ||
-                check("ELSE") ||
-                check("FOR") || 
-                check("REPEAT") ||
-                check("ASK") ||
-                check("CHOICE") ||
-                check("NARRATE") ||
-                check("DIALOGUE") ||
-                check("SHOW") ||
-                check("IDENTIFIER")) {
-                fprintf(stderr, "Recovered at statement boundary (after NEWLINE, before %s)\n",
-                       isAtEnd() ? "EOF" : tokens[current_pos].token_name);
+            if (isAtEnd() || isStatementStart(tokens[current_pos].token_name)) {
+                fprintf(stderr, "Recovered at statement boundary\n");
                 recovering = false;
                 return;
             }
@@ -308,7 +314,6 @@ static void recover_to_newline(void)
     recovering = false;
 }
 
-// Optional: keep skipping noise when not recovering
 void skip_noise_tokens()
 {
     while (check("COMMENT") || check("COMMENT_MULTI") || check("NEWLINE"))
@@ -340,7 +345,8 @@ void parse_Program() {
                 check("IF") || check("FOR") || check("REPEAT") ||
                 check("ASK") || check("CHOICE") ||
                 check("NARRATE") || check("DIALOGUE") || check("SHOW") ||
-                check("IDENTIFIER")) {
+                check("IDENTIFIER") || 
+                check("ELIF") || check("ELSE")) {
                 // Reset error flag and try to parse
                 errorOccurred = false;
                 parse_Statement();
@@ -373,7 +379,6 @@ void parse_StatementList() {
     
     skip_noise_tokens();
     while (!isAtEnd() && !check("END")) {
-        // If we hit DEDENT, we're at the end of a block, not the program
         if (check("DEDENT")) {
             break;
         }
@@ -411,6 +416,58 @@ void parse_Statement() {
     }
     else if(check("CHARACTER") || check("SCENE") || check("TEMPLATE")){
         parse_DeclarationStatement();
+    }
+    // ERROR RECOVERY: Orphaned Block / Statement
+    else if (check("INDENT")) {
+        // Check backwards to see if this block was intended (preceded by COLON)
+        int back = current_pos - 1;
+        while (back >= 0 && (
+            strcmp(tokens[back].token_name, "NEWLINE") == 0 || 
+            strcmp(tokens[back].token_name, "COMMENT") == 0 ||
+            strcmp(tokens[back].token_name, "COMMENT_MULTI") == 0)) {
+            back--;
+        }
+
+        bool precededByColon = (back >= 0 && strcmp(tokens[back].token_name, "COLON") == 0);
+
+        if (!precededByColon) {
+             // Only report error if the indent seems completely random
+            errorOccurred = true;
+            Token *t = currentToken();
+            fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
+            fprintf(stderr, "Line %d: Unexpected INDENT (orphaned block due to previous error?). Skipping indent.\n", t->lineNumber);
+            fprintf(stderr, "-------------------\n");
+        } else {
+             // Silently recover - we know this block belongs to the malformed header above
+        }
+        
+        advance(); // consume the INDENT
+        parse_Statement(); // Try to parse the statement inside
+        return;
+    }
+    // ERROR RECOVERY: Orphaned ELIF
+    else if (check("ELIF")) {
+        // MANUAL ERROR
+        errorOccurred = true;
+        Token *t = currentToken();
+        fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
+        fprintf(stderr, "Line %d: ELIF usage invalid here (must follow IF).\n", t->lineNumber);
+        fprintf(stderr, "-------------------\n");
+
+        parse_ElifClause(); // Parse it anyway to consume tokens
+        return;
+    }
+    // ERROR RECOVERY: Orphaned ELSE
+    else if (check("ELSE")) {
+        // MANUAL ERROR
+        errorOccurred = true;
+        Token *t = currentToken();
+        fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
+        fprintf(stderr, "Line %d: ELSE usage invalid here (must follow IF).\n", t->lineNumber);
+        fprintf(stderr, "-------------------\n");
+
+        parse_ElseClause(); // Parse it anyway to consume tokens
+        return;
     }
     else if (check("NEWLINE") || check("COMMENT") || check("COMMENT_MULTI")) {
         skip_noise_tokens();
@@ -475,6 +532,8 @@ void parse_AttributeAccess()
     if (!match("IDENTIFIER"))
     {
         parseError("IDENTIFIER");
+        endScope();
+        return;
     }
 
     // Optional: .attribute or .scenario
@@ -483,6 +542,8 @@ void parse_AttributeAccess()
         if (!match("IDENTIFIER"))
         {
             parseError("ATTRIBUTE or SCENARIO IDENTIFIER");
+            endScope();
+            return;
         }
     }
 
@@ -709,15 +770,28 @@ void parse_AssignmentStatement()
     
     parse_AttributeAccess();
 
+    if (errorOccurred)
+    {
+        endScope();
+        return;
+    }
+
     if (
         match("ASSIGN") || match("PLUS_ASSIGN") || match("MINUS_ASSIGN") || match("MULT_ASSIGN") || match("DIV_ASSIGN") || match("MOD_ASSIGN"))
     {
     }
     else
     {
-        parseError("assignment operator (=, +=, -=, *=, /=, %=)");
+        errorOccurred = true;
+        Token *t = currentToken();
+        fprintf(stderr, "\n--- SYNTAX ERROR ---\n");
+        fprintf(stderr, "Line %d: Expected assignment operator (=, +=, -=, *=, /=, %%%%+), but found token [%s] with lexeme '%s'.\n", 
+            t->lineNumber, t->token_name, t->lexeme);
+        fprintf(stderr, "-------------------\n");
+
+        recover_to_newline();
         endScope();
-        return;  // Don't continue parsing after error
+        return;
     }
 
     parse_Expression();
@@ -1300,7 +1374,7 @@ void parse_ElseClause(){
 <repeat_structure>      ::= <expression> "times" ":" <statement_block> | 
    "until" <expression> ":" <statement_block>
 */
-
+//holabels
 void parse_IterativeStatement(){
     beginScope("IterativeStmt");
  

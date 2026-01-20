@@ -96,7 +96,7 @@ else:
 
 # elif 
 if temperature > 30:
-    scene blue: 
+    scene blue:
         describe, "andrea"
 elif temperature > 40 and temperature <= 50: 
     scene denmar: 
@@ -114,7 +114,6 @@ for hero in party:
     show hero: "Ready for battle!"
     dialogue:
       "Let's go!"
-      
     repeat 3 times:
       show narrator: "Knock knock knock!"
 
