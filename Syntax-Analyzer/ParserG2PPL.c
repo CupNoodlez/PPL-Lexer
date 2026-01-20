@@ -438,7 +438,7 @@ void parse_Statement() {
             fprintf(stderr, "Line %d: Unexpected INDENT (orphaned block due to previous error?). Skipping indent.\n", t->lineNumber);
             fprintf(stderr, "-------------------\n");
         } else {
-             // Silently recover - we know this block belongs to the malformed header above
+             // Silently recover - this block belongs to the malformed heade
         }
         
         advance(); // consume the INDENT
@@ -895,6 +895,7 @@ void parse_AttributeList()
 {
     beginScope("AttributeList");
 
+    skip_noise_tokens();
     parse_AttributeAccess();
 
     if (!match("ASSIGN"))
@@ -906,6 +907,7 @@ void parse_AttributeList()
 
     while (match("NEWLINE"))
     {
+        skip_noise_tokens();
         if(check("DEDENT")){
             break;
         }
@@ -1021,12 +1023,15 @@ void parse_SceneList()
     beginScope("SceneList");
 
     /* Parse the first scene entry */
+    skip_noise_tokens();
     parse_SceneEntry();
 
     /* Continue as long as NEWLINE appears */
     while (match("NEWLINE"))
     {
         /* If DEDENT is the next token, stop the loop (don't consume it) */
+        skip_noise_tokens();
+
         if (check("DEDENT"))
         {
             break;
